@@ -8,6 +8,9 @@ import gleam/string
 
 @target(erlang)
 const recursion_test_cycles = 1_000_000
+@target(fsharp)
+const recursion_test_cycles = 1_000_000
+
 
 // JavaScript engines crash when exceeding a certain stack size:
 //

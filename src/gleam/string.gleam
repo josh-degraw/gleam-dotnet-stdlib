@@ -53,6 +53,7 @@ pub fn length(string: String) -> Int {
 
 @external(erlang, "string", "length")
 @external(javascript, "../gleam_stdlib.mjs", "string_length")
+@external(fsharp, "../gleam_stdlib.fsx", "String.length")
 fn do_length(a: String) -> Int
 
 /// Reverses a `String`.
@@ -121,6 +122,7 @@ pub fn lowercase(string: String) -> String {
 
 @external(erlang, "string", "lowercase")
 @external(javascript, "../gleam_stdlib.mjs", "lowercase")
+@external(fsharp, "../gleam_stdlib.fsx", "String.lowercase")
 fn do_lowercase(a: String) -> String
 
 /// Creates a new `String` with all the graphemes in the input `String` converted to
@@ -141,6 +143,7 @@ pub fn uppercase(string: String) -> String {
 
 @external(erlang, "string", "uppercase")
 @external(javascript, "../gleam_stdlib.mjs", "uppercase")
+@external(fsharp, "../gleam_stdlib.fsx", "String.uppercase")
 fn do_uppercase(a: String) -> String
 
 /// Compares two `String`s to see which is "larger" by comparing their graphemes.
@@ -172,6 +175,7 @@ pub fn compare(a: String, b: String) -> order.Order {
 
 @external(erlang, "gleam_stdlib", "less_than")
 @external(javascript, "../gleam_stdlib.mjs", "less_than")
+@external(fsharp, "../gleam_stdlib.fsx", "String.less_than")
 fn less_than(a: String, b: String) -> Bool
 
 /// Takes a substring given a start grapheme index and a length. Negative indexes
@@ -222,6 +226,7 @@ pub fn slice(from string: String, at_index idx: Int, length len: Int) -> String 
 }
 
 @external(erlang, "gleam_stdlib", "slice")
+@external(fsharp, "../gleam_stdlib.fsx", "String.slice")
 fn do_slice(string: String, idx: Int, len: Int) -> String {
   string
   |> to_graphemes
@@ -242,6 +247,7 @@ fn do_slice(string: String, idx: Int, len: Int) -> String {
 ///
 @external(erlang, "gleam_stdlib", "crop_string")
 @external(javascript, "../gleam_stdlib.mjs", "crop_string")
+@external(fsharp, "../gleam_stdlib.fsx", "String.crop")
 pub fn crop(from string: String, before substring: String) -> String
 
 /// Drops *n* graphemes from the left side of a `String`.
@@ -297,6 +303,7 @@ pub fn drop_right(from string: String, up_to num_graphemes: Int) -> String {
 ///
 @external(erlang, "gleam_stdlib", "contains_string")
 @external(javascript, "../gleam_stdlib.mjs", "contains_string")
+@external(fsharp, "../gleam_stdlib.fsx", "String.contains")
 pub fn contains(does haystack: String, contain needle: String) -> Bool
 
 /// Checks whether the first `String` starts with the second one.
@@ -314,6 +321,7 @@ pub fn starts_with(string: String, prefix: String) -> Bool {
 
 @external(erlang, "gleam_stdlib", "string_starts_with")
 @external(javascript, "../gleam_stdlib.mjs", "starts_with")
+@external(fsharp, "../gleam_stdlib.fsx", "String.starts_with")
 fn do_starts_with(a: String, b: String) -> Bool
 
 /// Checks whether the first `String` ends with the second one.
@@ -331,6 +339,7 @@ pub fn ends_with(string: String, suffix: String) -> Bool {
 
 @external(erlang, "gleam_stdlib", "string_ends_with")
 @external(javascript, "../gleam_stdlib.mjs", "ends_with")
+@external(fsharp, "../gleam_stdlib.fsx", "String.ends_with")
 fn do_ends_with(a: String, b: String) -> Bool
 
 /// Creates a list of `String`s by splitting a given string on a given substring.
@@ -342,6 +351,7 @@ fn do_ends_with(a: String, b: String) -> Bool
 /// // -> ["home", "gleam", "desktop", ""]
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fsx", "String.split")
 pub fn split(x: String, on substring: String) -> List(String) {
   case substring {
     "" -> to_graphemes(x)
@@ -377,6 +387,7 @@ pub fn split_once(
 }
 
 @external(javascript, "../gleam_stdlib.mjs", "split_once")
+@external(fsharp, "../gleam_stdlib.fsx", "String.split_once")
 fn do_split_once(x: String, substring: String) -> Result(#(String, String), Nil) {
   case erl_split(x, substring) {
     [first, rest] -> Ok(#(first, rest))
@@ -460,6 +471,7 @@ pub fn join(strings: List(String), with separator: String) -> String {
 }
 
 @external(javascript, "../gleam_stdlib.mjs", "join")
+@external(fsharp, "../gleam_stdlib.fsx", "String.join")
 fn do_join(strings: List(String), separator: String) -> String {
   strings
   |> list.intersperse(with: separator)
@@ -549,6 +561,7 @@ pub fn trim(string: String) -> String {
 }
 
 @external(javascript, "../gleam_stdlib.mjs", "trim")
+@external(fsharp, "../gleam_stdlib.fsx", "String.trim")
 fn do_trim(string: String) -> String {
   erl_trim(string, Both)
 }
@@ -576,6 +589,7 @@ pub fn trim_left(string: String) -> String {
 }
 
 @external(javascript, "../gleam_stdlib.mjs", "trim_left")
+@external(fsharp, "../gleam_stdlib.fsx", "String.trim_left")
 fn do_trim_left(string: String) -> String {
   erl_trim(string, Leading)
 }
@@ -594,6 +608,7 @@ pub fn trim_right(string: String) -> String {
 }
 
 @external(javascript, "../gleam_stdlib.mjs", "trim_right")
+@external(fsharp, "../gleam_stdlib.fsx", "String.trim_right")
 fn do_trim_right(string: String) -> String {
   erl_trim(string, Trailing)
 }
@@ -623,6 +638,7 @@ pub fn pop_grapheme(string: String) -> Result(#(String, String), Nil) {
 
 @external(erlang, "gleam_stdlib", "string_pop_grapheme")
 @external(javascript, "../gleam_stdlib.mjs", "pop_grapheme")
+@external(fsharp, "../gleam_stdlib.fsx", "String.pop_grapheme")
 fn do_pop_grapheme(string string: String) -> Result(#(String, String), Nil)
 
 /// Converts a `String` to a list of
@@ -634,6 +650,7 @@ fn do_pop_grapheme(string string: String) -> Result(#(String, String), Nil)
 /// ```
 ///
 @external(javascript, "../gleam_stdlib.mjs", "graphemes")
+@external(fsharp, "../gleam_stdlib.fsx", "String.to_graphemes")
 pub fn to_graphemes(string: String) -> List(String) {
   do_to_graphemes(string, [])
   |> list.reverse
@@ -648,6 +665,7 @@ fn do_to_graphemes(string: String, acc: List(String)) -> List(String) {
 
 @external(erlang, "gleam_stdlib", "identity")
 @external(javascript, "../gleam_stdlib.mjs", "codepoint")
+@external(fsharp, "../gleam_stdlib.fsx", "String.unsafe_int_to_utf_codepoint")
 fn unsafe_int_to_utf_codepoint(a: Int) -> UtfCodepoint
 
 /// Converts a `String` to a `List` of `UtfCodepoint`.
@@ -705,6 +723,10 @@ fn do_to_utf_codepoints(string: String) -> List(UtfCodepoint) {
   |> list.map(unsafe_int_to_utf_codepoint)
 }
 
+@target(fsharp)
+@external(fsharp, "../gleam_stdlib.fsx", "String.to_utf_codepoints")
+fn do_to_utf_codepoints(string: String) -> List(UtfCodepoint)
+
 @target(javascript)
 @external(javascript, "../gleam_stdlib.mjs", "string_to_codepoint_integer_list")
 fn string_to_codepoint_integer_list(a: String) -> List(Int)
@@ -727,6 +749,7 @@ fn string_to_codepoint_integer_list(a: String) -> List(Int)
 ///
 @external(erlang, "gleam_stdlib", "utf_codepoint_list_to_string")
 @external(javascript, "../gleam_stdlib.mjs", "utf_codepoint_list_to_string")
+@external(fsharp, "../gleam_stdlib.fsx", "String.from_utf_codepoints")
 pub fn from_utf_codepoints(utf_codepoints: List(UtfCodepoint)) -> String
 
 /// Converts an integer to a `UtfCodepoint`.
@@ -758,6 +781,7 @@ pub fn utf_codepoint_to_int(cp: UtfCodepoint) -> Int {
 
 @external(erlang, "gleam_stdlib", "identity")
 @external(javascript, "../gleam_stdlib.mjs", "utf_codepoint_to_int")
+@external(fsharp, "../gleam_stdlib.fsx", "String.utf_codepoint_to_int")
 fn do_utf_codepoint_to_int(cp cp: UtfCodepoint) -> Int
 
 /// Converts a `String` into `Option(String)` where an empty `String` becomes
@@ -855,6 +879,7 @@ pub fn inspect(term: anything) -> String {
 
 @external(erlang, "gleam_stdlib", "inspect")
 @external(javascript, "../gleam_stdlib.mjs", "inspect")
+@external(fsharp, "../gleam_stdlib.fsx", "String.inspect")
 fn do_inspect(term term: anything) -> StringBuilder
 
 /// Returns the number of bytes in a `String`.
@@ -871,4 +896,5 @@ fn do_inspect(term term: anything) -> StringBuilder
 ///
 @external(erlang, "erlang", "byte_size")
 @external(javascript, "../gleam_stdlib.mjs", "byte_size")
+@external(fsharp, "../gleam_stdlib.fsx", "String.byte_size")
 pub fn byte_size(string: String) -> Int

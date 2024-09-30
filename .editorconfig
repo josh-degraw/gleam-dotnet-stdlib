@@ -21,3 +21,7 @@ indent_size = 4
 [*.{gleam, erl, mjs, js, ts}]
 max_line_length = 80
 
+
+[*.fsx]
+indent_size = 4
+multiline_bracket_style = stroustrup

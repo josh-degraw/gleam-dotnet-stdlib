@@ -35,6 +35,7 @@ pub fn parse(string: String) -> Result(Float, Nil) {
 
 @external(erlang, "gleam_stdlib", "parse_float")
 @external(javascript, "../gleam_stdlib.mjs", "parse_float")
+@external(fsharp, "../gleam_stdlib.fsx", "Float.parse_float")
 fn do_parse(a: String) -> Result(Float, Nil)
 
 /// Returns the string representation of the provided `Float`.
@@ -52,6 +53,7 @@ pub fn to_string(x: Float) -> String {
 
 @external(erlang, "gleam_stdlib", "float_to_string")
 @external(javascript, "../gleam_stdlib.mjs", "float_to_string")
+@external(fsharp, "../gleam_stdlib.fsx", "Float.to_string")
 fn do_to_string(a: Float) -> String
 
 /// Restricts a `Float` between a lower and upper bound.
@@ -202,6 +204,7 @@ pub fn ceiling(x: Float) -> Float {
 
 @external(erlang, "math", "ceil")
 @external(javascript, "../gleam_stdlib.mjs", "ceiling")
+@external(fsharp, "../gleam_stdlib.fsx", "Float.ceiling")
 fn do_ceiling(a: Float) -> Float
 
 /// Rounds the value to the next lowest whole number as a `Float`.
@@ -219,6 +222,7 @@ pub fn floor(x: Float) -> Float {
 
 @external(erlang, "math", "floor")
 @external(javascript, "../gleam_stdlib.mjs", "floor")
+@external(fsharp, "../gleam_stdlib.fsx", "Float.floor")
 fn do_floor(a: Float) -> Float
 
 /// Rounds the value to the nearest whole number as an `Int`.
@@ -240,6 +244,7 @@ pub fn round(x: Float) -> Int {
 }
 
 @external(erlang, "erlang", "round")
+@external(fsharp, "../gleam_stdlib.fsx", "Float.round")
 fn do_round(x: Float) -> Int {
   case x >=. 0.0 {
     True -> js_round(x)
@@ -265,6 +270,7 @@ pub fn truncate(x: Float) -> Int {
 
 @external(erlang, "erlang", "trunc")
 @external(javascript, "../gleam_stdlib.mjs", "truncate")
+@external(fsharp, "../gleam_stdlib.fsx", "Float.truncate")
 fn do_truncate(a: Float) -> Int
 
 /// Converts the value to a given precision as a `Float`.
@@ -291,6 +297,7 @@ pub fn to_precision(x: Float, precision: Int) -> Float {
 
 @external(erlang, "erlang", "float")
 @external(javascript, "../gleam_stdlib.mjs", "identity")
+@external(fsharp, "../gleam_stdlib.fsx", "Float.to_float")
 fn do_to_float(a: Int) -> Float
 
 /// Returns the absolute value of the input as a `Float`.
@@ -360,6 +367,7 @@ pub fn power(base: Float, of exponent: Float) -> Result(Float, Nil) {
 
 @external(erlang, "math", "pow")
 @external(javascript, "../gleam_stdlib.mjs", "power")
+@external(fsharp, "../gleam_stdlib.fsx", "Float.power")
 fn do_power(a: Float, b: Float) -> Float
 
 /// Returns the square root of the input as a `Float`.
@@ -376,6 +384,7 @@ fn do_power(a: Float, b: Float) -> Float
 /// // -> Error(Nil)
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fsx", "Float.sqrt")
 pub fn square_root(x: Float) -> Result(Float, Nil) {
   power(x, 0.5)
 }
@@ -452,6 +461,7 @@ fn do_product(numbers: List(Float), initial: Float) -> Float {
 ///
 @external(erlang, "rand", "uniform")
 @external(javascript, "../gleam_stdlib.mjs", "random_uniform")
+@external(fsharp, "../gleam_stdlib.fsx", "Float.random")
 pub fn random() -> Float
 
 /// Computes the modulo of an float division of inputs as a `Result`.

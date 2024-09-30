@@ -33,6 +33,7 @@ pub type Dict(key, value)
 ///
 @external(erlang, "maps", "size")
 @external(javascript, "../gleam_stdlib.mjs", "map_size")
+@external(fsharp, "../gleam_stdlib.fsx", "Map.size")
 pub fn size(dict: Dict(k, v)) -> Int
 
 /// Determines whether or not the dict is empty.
@@ -49,6 +50,7 @@ pub fn size(dict: Dict(k, v)) -> Int
 /// // -> False
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fsx", "Map.is_empty")
 pub fn is_empty(dict: Dict(k, v)) -> Bool {
   dict == new()
 }
@@ -77,6 +79,7 @@ pub fn is_empty(dict: Dict(k, v)) -> Bool {
 ///
 @external(erlang, "maps", "to_list")
 @external(javascript, "../gleam_stdlib.mjs", "map_to_list")
+@external(fsharp, "../gleam_stdlib.fsx", "Map.to_list")
 pub fn to_list(dict: Dict(key, value)) -> List(#(key, value))
 
 /// Converts a list of 2-element tuples `#(key, value)` to a dict.
@@ -85,6 +88,7 @@ pub fn to_list(dict: Dict(key, value)) -> List(#(key, value))
 /// that is present in the dict.
 ///
 @external(erlang, "maps", "from_list")
+@external(fsharp, "../gleam_stdlib.fsx", "Map.from_list")
 pub fn from_list(list: List(#(k, v))) -> Dict(k, v) {
   fold_list_of_pair(list, new())
 }
@@ -118,6 +122,7 @@ pub fn has_key(dict: Dict(k, v), key: k) -> Bool {
 }
 
 @external(erlang, "maps", "is_key")
+@external(fsharp, "../gleam_stdlib.fsx", "Map.has_key")
 fn do_has_key(key: k, dict: Dict(k, v)) -> Bool {
   get(dict, key) != Error(Nil)
 }
@@ -130,6 +135,7 @@ pub fn new() -> Dict(key, value) {
 
 @external(erlang, "maps", "new")
 @external(javascript, "../gleam_stdlib.mjs", "new_map")
+@external(fsharp, "../gleam_stdlib.fsx", "Map.empty")
 fn do_new() -> Dict(key, value)
 
 /// Fetches a value from a dict for a given key.
@@ -155,6 +161,7 @@ pub fn get(from: Dict(key, value), get: key) -> Result(value, Nil) {
 
 @external(erlang, "gleam_stdlib", "map_get")
 @external(javascript, "../gleam_stdlib.mjs", "map_get")
+@external(fsharp, "../gleam_stdlib.fsx", "Map.get")
 fn do_get(a: Dict(key, value), b: key) -> Result(value, Nil)
 
 /// Inserts a value into the dict with the given key.
@@ -180,6 +187,7 @@ pub fn insert(into dict: Dict(k, v), for key: k, insert value: v) -> Dict(k, v) 
 
 @external(erlang, "maps", "put")
 @external(javascript, "../gleam_stdlib.mjs", "map_insert")
+@external(fsharp, "../gleam_stdlib.fsx", "Map.add")
 fn do_insert(a: key, b: value, c: Dict(key, value)) -> Dict(key, value)
 
 /// Updates all values in a given dict by calling a given function on each key
@@ -198,6 +206,7 @@ pub fn map_values(in dict: Dict(k, v), with fun: fn(k, v) -> w) -> Dict(k, w) {
 }
 
 @external(erlang, "maps", "map")
+@external(fsharp, "../gleam_stdlib.fsx", "Map.map_values")
 fn do_map_values(f: fn(key, value) -> b, dict: Dict(key, value)) -> Dict(key, b) {
   let f = fn(dict, k, v) { insert(dict, k, f(k, v)) }
   dict
@@ -222,6 +231,7 @@ pub fn keys(dict: Dict(keys, v)) -> List(keys) {
 }
 
 @external(erlang, "maps", "keys")
+@external(fsharp, "../gleam_stdlib.fsx", "Map.keys")
 fn do_keys(dict: Dict(k, v)) -> List(k) {
   let list_of_pairs = to_list(dict)
   do_keys_acc(list_of_pairs, [])
@@ -259,6 +269,7 @@ pub fn values(dict: Dict(k, values)) -> List(values) {
 }
 
 @external(erlang, "maps", "values")
+@external(fsharp, "../gleam_stdlib.fsx", "Map.values")
 fn do_values(dict: Dict(k, v)) -> List(v) {
   let list_of_pairs = to_list(dict)
   do_values_acc(list_of_pairs, [])
@@ -296,6 +307,7 @@ pub fn filter(
 }
 
 @external(erlang, "maps", "filter")
+@external(fsharp, "../gleam_stdlib.fsx", "Map.filter")
 fn do_filter(
   f: fn(key, value) -> Bool,
   dict: Dict(key, value),
@@ -410,6 +422,7 @@ pub fn delete(from dict: Dict(k, v), delete key: k) -> Dict(k, v) {
 
 @external(erlang, "maps", "remove")
 @external(javascript, "../gleam_stdlib.mjs", "map_remove")
+@external(fsharp, "../gleam_stdlib.fsx", "Map.remove")
 fn do_delete(a: k, b: Dict(k, v)) -> Dict(k, v)
 
 /// Creates a new dict from a given dict with all the same entries except any with

@@ -7,6 +7,9 @@ import gleam/should
 @target(erlang)
 const recursion_test_cycles = 1_000_000
 
+@target(fsharp)
+const recursion_test_cycles = 1_000_000
+
 // JavaScript engines crash when exceeding a certain stack size:
 //
 // - Chrome 106 and NodeJS V16, V18, and V19 crash around 10_000+
@@ -14,6 +17,7 @@ const recursion_test_cycles = 1_000_000
 // - Safari 16 crashes around 40_000+.
 @target(javascript)
 const recursion_test_cycles = 40_000
+
 
 // a |> from_list |> to_list == a
 pub fn to_from_list_test() {
