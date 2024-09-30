@@ -8,6 +8,13 @@ import gleam/result
 type Token =
   List(Nil)
 
+// TODO: This would be more efficient in F# using the native Set type
+@target(fsharp)
+type Token = Nil
+
+@target(fsharp)
+const token = Nil
+
 @target(erlang)
 const token = []
 
