@@ -1,5 +1,16 @@
+namespace Gleam
+
 open System
-type UtfCodepoint = UtfCodepoint of int
+type UtfCodepoint = UtfCodepoint of int64
+
+module Util =
+    let option_of_string (value: string) =
+        if String.IsNullOrEmpty value then None else Some(value)
+
+    let result_of_option (value: 'a option) =
+        match value with
+        | Some(v) -> Ok(v)
+        | None -> Error()
 
 module Map =
     let size = Map.count
@@ -8,7 +19,10 @@ module Map =
     let from_list = Map.ofList
     let has_key (key: 'a) (map: Map<'a, 'b>) = Map.containsKey key map
     let empty () = Map.empty
-    let get map key = Map.tryFind key map
+
+    let get map key =
+        Map.tryFind key map |> Util.result_of_option
+
     let insert (key: 'a) (value: 'b) (map: Map<'a, 'b>) = Map.add key value map
 
     let map_values f dict = Map.map f dict
@@ -38,7 +52,8 @@ module Float =
 
     let round (a: float) = round (a)
 
-    let to_float (a: int) = float (a)
+    let to_float (a: int64) = float (a)
+    let d = 8L
 
     let power (base': float) (exponent: float) = pown base' (int exponent)
 
@@ -46,7 +61,7 @@ module Float =
 
     let square_root (a: float) = sqrt (a)
 
-    let truncate (a: float) = int (a)
+    let truncate (a: float) = int64 (a)
 
     let to_string (a: float) = a.ToString()
 
@@ -60,27 +75,27 @@ module Int =
 
     let base_parse (a: string) (b: int) =
         try
-            Ok(System.Convert.ToInt32(a, b))
+            Ok(System.Convert.ToInt64(a, b))
         with _ ->
             Error()
 
-    let to_string (a: int) = a.ToString()
+    let to_string (a: int64) = a.ToString()
 
-    let to_base_string (a: int) (b: int) = System.Convert.ToString(a, b)
+    let to_base_string (a: int64) (b: int) = System.Convert.ToString(a, b)
 
-    let to_float (a: int) = float (a)
+    let to_float (a: int64) = float (a)
 
-    let bitwise_and (x: int) (y: int) = x &&& y
+    let bitwise_and (x: int64) (y: int64) = x &&& y
 
-    let bitwise_not (x: int) = ~~~x
+    let bitwise_not (x: int64) = ~~~x
 
-    let bitwise_or (x: int, y: int) = x ||| y
+    let bitwise_or (x: int64) (y: int64) = x ||| y
 
-    let bitwise_exclusive_or (x: int, y: int) = x ^^^ y
+    let bitwise_exclusive_or (x: int64) (y: int64) = x ^^^ y
 
-    let bitwise_shift_left (x: int, y: int) = x <<< y
+    let bitwise_shift_left (x: int64) (y: int) = x <<< y
 
-    let bitwise_shift_right (x: int, y: int) = x >>> y
+    let bitwise_shift_right (x: int64) (y: int) = x >>> y
 
 
 module StringBuilder =
@@ -187,11 +202,11 @@ module String =
     let to_graphemes (s: string) =
         s.ToCharArray() |> Array.map string |> Array.toList
 
-    let unsafe_int_to_utf_codepoint (a: int) = UtfCodepoint(a)
+    let unsafe_int_to_utf_codepoint (a: int64) = UtfCodepoint(a)
 
     let to_utf_codepoints (s: string) =
         s.ToCharArray()
-        |> Array.map (fun c -> int c)
+        |> Array.map (fun c -> int64 c)
         |> Array.map UtfCodepoint
         |> Array.toList
 
@@ -208,7 +223,7 @@ module String =
 
 module BitArray =
     open System
-    type BitArray = BitArray of int
+    type BitArray = BitArray of int64
 
     let from_string (s: string) =
         raise (NotImplementedException("BitArray.from_string not yet implemented"))
@@ -222,7 +237,7 @@ module BitArray =
     let concat first second =
         raise (NotImplementedException("BitArray.concat not yet implemented"))
 
-    let slice (arr: BitArray) (start: int) (length: int) =
+    let slice (arr: BitArray) (start: int64) (length: int64) =
         raise (NotImplementedException("BitArray.slice not yet implemented"))
 
     let is_utf8 (arr: BitArray) =
@@ -276,7 +291,7 @@ module Dynamic =
     let classify (Dynamic(data)) =
         match data with
         | :? string -> "String"
-        | :? int -> "Int"
+        | :? int64 -> "Int"
         | :? float -> "Float"
         | :? bool -> "Bool"
         | _ ->
@@ -297,7 +312,7 @@ module Dynamic =
                 data.GetType().Name
 
 
-    let decode_int (Dynamic(data) as dyn) : Result<int, DecodeErrors> =
+    let decode_int (Dynamic(data) as dyn) : Result<int64, DecodeErrors> =
         match (classify dyn) with
         | "Int" -> Ok(Convert.ToInt32 data)
         | found ->
@@ -556,20 +571,16 @@ module Regex =
         { content: string
           submatches: list<Option<string>> }
 
-    type CompileError = { error: string; byte_index: int }
+    type CompileError = { error: string; byte_index: int64 }
 
-    type Options =
-        { case_insensitive: bool
-          multi_line: bool }
-
-    let compile (pattern: string) (opts: Options) =
+    let compile (pattern: string) (case_insensitive: bool) (multi_line: bool) =
 
         let mutable options = RegexOptions.Compiled
 
-        if opts.case_insensitive then
+        if case_insensitive then
             options <- options ||| RegexOptions.IgnoreCase
 
-        if opts.multi_line then
+        if multi_line then
             options <- options ||| RegexOptions.Multiline
 
         try
@@ -631,3 +642,65 @@ module Set =
     let difference (first: Set<'a>) (second: Set<'a>) = Set.difference first second
 
     let symmetric_difference (first: Set<'a>) (second: Set<'a>) = Set.difference first second
+
+module Uri =
+    type NativeUri = System.Uri
+
+    type Uri =
+        { scheme: Option<string>
+          userinfo: Option<string>
+          host: Option<string>
+          port: Option<int>
+          path: string
+          query: Option<string>
+          fragment: Option<string> }
+
+    let percent_encode (value: string) = NativeUri.EscapeDataString(value)
+
+    let percent_decode (value: string) = NativeUri.UnescapeDataString(value)
+
+    let parse (uri_string: string) : Result<Uri, unit> =
+        try
+            let uri = new NativeUri(uri_string)
+
+            Ok
+                { scheme = uri.Scheme |> Util.option_of_string
+                  userinfo = uri.UserInfo |> Util.option_of_string
+                  host = uri.Host |> Util.option_of_string
+                  port = uri.Port |> Some
+                  path = uri.AbsolutePath
+                  query = uri.Query |> Util.option_of_string
+                  fragment = uri.Fragment |> Util.option_of_string }
+        with ex ->
+            Error()
+
+
+    let something (a: int64) = ()
+    let somethinge (a: int) = ()
+
+    let dkd () =
+        something 1
+        somethinge 1L
+
+    let parse_query (query: string) : Result<list<(string * string)>, unit> =
+        try
+            let uri = new NativeUri(query)
+
+            uri.Query.Split '&'
+            |> Array.map (fun pair -> pair.Split '=')
+            |> Array.map (fun pair -> NativeUri.UnescapeDataString(pair.[0]), NativeUri.UnescapeDataString(pair.[1]))
+            |> Array.toList
+            |> Ok
+        with ex ->
+            Error()
+
+module List =
+    let length (list: list<'a>) = List.length list
+
+    let reverse (list: list<'a>) = List.rev list
+
+    let contains (list: list<'a>) (elem: 'a) = List.contains elem list
+
+    let append (first: list<'a>) (second: list<'a>) = List.append first second
+
+    let concat (lists: list<list<'a>>) = List.concat lists
