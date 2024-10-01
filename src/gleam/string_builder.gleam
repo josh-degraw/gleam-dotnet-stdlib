@@ -21,7 +21,7 @@ pub type StringBuilder
 /// Create an empty `StringBuilder`. Useful as the start of a pipe chaining many
 /// builders together.
 ///
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.StringBuilder.init")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.init")
 pub fn new() -> StringBuilder {
   do_from_strings([])
 }
@@ -69,7 +69,7 @@ pub fn append_builder(
 
 @external(erlang, "gleam_stdlib", "iodata_append")
 @external(javascript, "../gleam_stdlib.mjs", "add")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.StringBuilder.append_builder")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.append")
 fn do_append(a: StringBuilder, b: StringBuilder) -> StringBuilder
 
 /// Converts a list of strings into a builder.
@@ -82,7 +82,7 @@ pub fn from_strings(strings: List(String)) -> StringBuilder {
 
 @external(erlang, "gleam_stdlib", "identity")
 @external(javascript, "../gleam_stdlib.mjs", "concat")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.StringBuilder.from_strings")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.from_strings")
 fn do_from_strings(a: List(String)) -> StringBuilder
 
 /// Joins a list of builders into a single builder.
@@ -95,7 +95,7 @@ pub fn concat(builders: List(StringBuilder)) -> StringBuilder {
 
 @external(erlang, "gleam_stdlib", "identity")
 @external(javascript, "../gleam_stdlib.mjs", "concat")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.StringBuilder.concat")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.concat")
 fn do_concat(a: List(StringBuilder)) -> StringBuilder
 
 /// Converts a string into a builder.
@@ -108,7 +108,7 @@ pub fn from_string(string: String) -> StringBuilder {
 
 @external(erlang, "gleam_stdlib", "identity")
 @external(javascript, "../gleam_stdlib.mjs", "identity")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.StringBuilder.from_string")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.from_string")
 fn do_from_string(a: String) -> StringBuilder
 
 /// Turns an `StringBuilder` into a `String`
@@ -122,7 +122,7 @@ pub fn to_string(builder: StringBuilder) -> String {
 
 @external(erlang, "unicode", "characters_to_binary")
 @external(javascript, "../gleam_stdlib.mjs", "identity")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.StringBuilder.to_string")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.to_string")
 fn do_to_string(a: StringBuilder) -> String
 
 /// Returns the size of the `StringBuilder` in bytes.
@@ -133,7 +133,7 @@ pub fn byte_size(builder: StringBuilder) -> Int {
 
 @external(erlang, "erlang", "iolist_size")
 @external(javascript, "../gleam_stdlib.mjs", "length")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.StringBuilder.byte_size")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.byte_size")
 fn do_byte_size(a: StringBuilder) -> Int
 
 /// Joins the given builders into a new builder separated with the given string
@@ -153,7 +153,7 @@ pub fn lowercase(builder: StringBuilder) -> StringBuilder {
 
 @external(erlang, "string", "lowercase")
 @external(javascript, "../gleam_stdlib.mjs", "lowercase")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.StringBuilder.lowercase")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.lowercase")
 fn do_lowercase(a: StringBuilder) -> StringBuilder
 
 /// Converts a builder to a new builder where the contents have been
@@ -165,7 +165,7 @@ pub fn uppercase(builder: StringBuilder) -> StringBuilder {
 
 @external(erlang, "string", "uppercase")
 @external(javascript, "../gleam_stdlib.mjs", "uppercase")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.StringBuilder.uppercase")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.uppercase")
 fn do_uppercase(a: StringBuilder) -> StringBuilder
 
 /// Converts a builder to a new builder with the contents reversed.
@@ -175,7 +175,7 @@ pub fn reverse(builder: StringBuilder) -> StringBuilder {
 }
 
 @external(erlang, "string", "reverse")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.StringBuilder.reverse")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.reverse")
 fn do_reverse(builder: StringBuilder) -> StringBuilder {
   builder
   |> to_string
@@ -198,7 +198,7 @@ type Direction {
 }
 
 @external(javascript, "../gleam_stdlib.mjs", "split")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.StringBuilder.split")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.split")
 fn do_split(iodata: StringBuilder, pattern: String) -> List(StringBuilder) {
   erl_split(iodata, pattern, All)
 }
@@ -210,7 +210,7 @@ fn erl_split(a: StringBuilder, b: String, c: Direction) -> List(StringBuilder)
 ///
 @external(erlang, "gleam_stdlib", "string_replace")
 @external(javascript, "../gleam_stdlib.mjs", "string_replace")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.StringBuilder.replace")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.replace")
 pub fn replace(
   in builder: StringBuilder,
   each pattern: String,
@@ -236,7 +236,7 @@ pub fn replace(
 /// ```
 ///
 @external(erlang, "string", "equal")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.StringBuilder.is_equal")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.is_equal")
 pub fn is_equal(a: StringBuilder, b: StringBuilder) -> Bool {
   a == b
 }
@@ -261,7 +261,7 @@ pub fn is_equal(a: StringBuilder, b: StringBuilder) -> Bool {
 /// ```
 ///
 @external(erlang, "string", "is_empty")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.StringBuilder.is_empty")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.is_empty")
 pub fn is_empty(builder: StringBuilder) -> Bool {
   from_string("") == builder
 }

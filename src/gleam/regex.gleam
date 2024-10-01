@@ -66,7 +66,7 @@ fn do_compile(a: String, with options: Options) -> Result(Regex, CompileError){
 }
 
 @target(fsharp)
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.Regex.compile")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Regex.compile")
 fn compile_fsharp(a: String, case_insensitive: Bool, multi_line: Bool) -> Result(Regex, CompileError)
 
 /// Creates a new `Regex`.
@@ -117,7 +117,7 @@ pub fn check(with regex: Regex, content content: String) -> Bool {
 
 @external(erlang, "gleam_stdlib", "regex_check")
 @external(javascript, "../gleam_stdlib.mjs", "regex_check")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.Regex.check")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Regex.check")
 fn do_check(a: Regex, b: String) -> Bool
 
 /// Splits a string.
@@ -136,7 +136,7 @@ pub fn split(with regex: Regex, content string: String) -> List(String) {
 
 @external(erlang, "gleam_stdlib", "regex_split")
 @external(javascript, "../gleam_stdlib.mjs", "regex_split")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.Regex.split")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Regex.split")
 fn do_split(a: Regex, b: String) -> List(String)
 
 /// Collects all matches of the regular expression.
@@ -197,7 +197,7 @@ pub fn scan(with regex: Regex, content string: String) -> List(Match) {
 
 @external(erlang, "gleam_stdlib", "regex_scan")
 @external(javascript, "../gleam_stdlib.mjs", "regex_scan")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.Regex.scan")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Regex.scan")
 fn do_scan(a: Regex, b: String) -> List(Match)
 
 /// Creates a new `String` by replacing all substrings that match the regular
@@ -218,7 +218,7 @@ fn do_scan(a: Regex, b: String) -> List(Match)
 /// ```
 @external(erlang, "gleam_stdlib", "regex_replace")
 @external(javascript, "../gleam_stdlib.mjs", "regex_replace")
-@external(fsharp, "../gleam_stdlib.fsx", "Gleam.Regex.replace")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Regex.replace")
 pub fn replace(
   each pattern: Regex,
   in string: String,

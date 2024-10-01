@@ -1,7 +1,7 @@
 namespace Gleam
 
+open gleam
 open System
-type UtfCodepoint = UtfCodepoint of int64
 
 module Util =
     let option_of_string (value: string) =
@@ -52,14 +52,13 @@ module Float =
 
     let round (a: float) = round (a)
 
-    let to_float (a: int64) = float (a)
-    let d = 8L
+    let inline to_float (a) = float (a)
 
     let power (base': float) (exponent: float) = pown base' (int exponent)
 
     let random () = System.Random().NextDouble()
 
-    let square_root (a: float) = sqrt (a)
+    let sqrt (a: float) = sqrt (a)
 
     let truncate (a: float) = int64 (a)
 
@@ -73,17 +72,17 @@ module Int =
         with _ ->
             Error()
 
-    let base_parse (a: string) (b: int) =
+    let base_parse (a: string) (b: int64) =
         try
-            Ok(System.Convert.ToInt64(a, b))
+            Ok(System.Convert.ToInt64(a, int b))
         with _ ->
             Error()
 
     let to_string (a: int64) = a.ToString()
 
-    let to_base_string (a: int64) (b: int) = System.Convert.ToString(a, b)
+    let to_base_string (a: int64) (b: int64) = System.Convert.ToString(a, int b)
 
-    let to_float (a: int64) = float (a)
+    let inline to_float a = float (a)
 
     let bitwise_and (x: int64) (y: int64) = x &&& y
 
@@ -93,9 +92,9 @@ module Int =
 
     let bitwise_exclusive_or (x: int64) (y: int64) = x ^^^ y
 
-    let bitwise_shift_left (x: int64) (y: int) = x <<< y
+    let bitwise_shift_left (x: int64) (y: int64) = x <<< int y
 
-    let bitwise_shift_right (x: int64) (y: int) = x >>> y
+    let bitwise_shift_right (x: int64) (y: int64) = x >>> int y
 
 
 module StringBuilder =
@@ -128,7 +127,7 @@ module StringBuilder =
 
     let to_string (a: StringBuilder) = a.ToString()
 
-    let byte_size (a: StringBuilder) = a.Length
+    let byte_size (a: StringBuilder) = a.Length |> int64
 
     let lowercase (a: StringBuilder) =
         for i in 0 .. a.Length do
@@ -153,11 +152,17 @@ module StringBuilder =
 
     let is_empty (a: StringBuilder) = a.Length = 0
 
+    let inspect (term: obj) : StringBuilder =
+        let builder = StringBuilder()
+        // TODO: This may not be safe for AOT
+        Printf.bprintf builder "%A" term
+        builder
+
 module String =
 
     let ofChars (chars: char list) = new string (List.toArray chars)
 
-    let length (s: string) = s.Length
+    let length (s: string) = s.Length |> int64
 
     let lowercase (s: string) = s.ToLower()
 
@@ -165,7 +170,7 @@ module String =
 
     let less_than (a: string) (b: string) = a < b
 
-    let slice (s: string) (start: int) (length: int) = s.Substring(start, length)
+    let slice (s: string) (start: int64) (length: int64) = s.Substring(int start, int length)
 
     let crop (s: string) (before: string) =
         let index = s.IndexOf(before)
@@ -197,7 +202,11 @@ module String =
 
     let pop_grapheme (s: string) =
         let index = s.IndexOf(s[0])
-        if index = -1 then None else Some(s[0], s.Substring(1))
+
+        if index = -1 then
+            Error()
+        else
+            Ok(s[0] |> string, s.Substring(1))
 
     let to_graphemes (s: string) =
         s.ToCharArray() |> Array.map string |> Array.toList
@@ -674,14 +683,6 @@ module Uri =
         with ex ->
             Error()
 
-
-    let something (a: int64) = ()
-    let somethinge (a: int) = ()
-
-    let dkd () =
-        something 1
-        somethinge 1L
-
     let parse_query (query: string) : Result<list<(string * string)>, unit> =
         try
             let uri = new NativeUri(query)
@@ -695,7 +696,7 @@ module Uri =
             Error()
 
 module List =
-    let length (list: list<'a>) = List.length list
+    let length (list: list<'a>) = List.length list |> int64
 
     let reverse (list: list<'a>) = List.rev list
 
