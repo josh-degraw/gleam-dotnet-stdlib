@@ -1,6 +1,8 @@
 namespace Gleam
 
 open gleam
+open gleam.Prelude
+open gleam.Prelude.Builtins
 open System
 
 module Util =
@@ -50,7 +52,7 @@ module Float =
 
     let ceiling (a: float) = ceil (a)
 
-    let round (a: float) = round (a)
+    let round (a: float) = round (a) |> int64
 
     let inline to_float (a) = float (a)
 
@@ -231,8 +233,6 @@ module String =
     let byte_size (s: string) = s.Length
 
 module BitArray =
-    open System
-    type BitArray = BitArray of int64
 
     let from_string (s: string) =
         raise (NotImplementedException("BitArray.from_string not yet implemented"))
@@ -283,14 +283,8 @@ module BitArray =
 
 
 module Dynamic =
-    type Dynamic = Dynamic of obj
-
-    type DecodeError =
-        { expected: string
-          found: string
-          path: string list }
-
-    type DecodeErrors = DecodeError list
+    type DecodeErrors = gleam.Prelude.Builtins.DecodeErrors
+    type Dynamic = gleam.Prelude.Builtins.Dynamic
 
     let from (a: obj) = Dynamic(a)
 
@@ -438,7 +432,6 @@ module Dynamic =
                     path = [] } ]
 
 
-    type UnknownTuple = UnknownTuple of Dynamic list
 
     let decode_tuple (Dynamic(data) as dyn) : Result<UnknownTuple, DecodeErrors> =
         match classify dyn with
@@ -572,15 +565,9 @@ module IO =
         term
 
 module Regex =
-    open System.Text.RegularExpressions
-
-    type RegexMatch = System.Text.RegularExpressions.Match
-
-    type Match =
-        { content: string
-          submatches: list<Option<string>> }
-
-    type CompileError = { error: string; byte_index: int64 }
+    type Match = gleam.Prelude.Builtins.Match
+    type RegexOptions = System.Text.RegularExpressions.RegexOptions
+    type Regex = System.Text.RegularExpressions.Regex
 
     let compile (pattern: string) (case_insensitive: bool) (multi_line: bool) =
 
@@ -605,12 +592,12 @@ module Regex =
         let matches = regex.Matches(content)
 
         matches
-        |> Seq.cast<RegexMatch>
+        |> Seq.cast<System.Text.RegularExpressions.Match>
         |> Seq.map (fun m ->
             { content = m.Value
               submatches =
                 m.Groups
-                |> Seq.cast<Group>
+                |> Seq.cast<System.Text.RegularExpressions.Group>
                 |> Seq.skip 1 // Skip the first match, which is the whole match
                 |> Seq.map (fun g -> if g.Success then Some(g.Value) else None)
                 |> Seq.toList })
@@ -654,15 +641,7 @@ module Set =
 
 module Uri =
     type NativeUri = System.Uri
-
-    type Uri =
-        { scheme: Option<string>
-          userinfo: Option<string>
-          host: Option<string>
-          port: Option<int>
-          path: string
-          query: Option<string>
-          fragment: Option<string> }
+    type Uri = gleam.Prelude.Builtins.Uri
 
     let percent_encode (value: string) = NativeUri.EscapeDataString(value)
 
