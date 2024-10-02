@@ -12,6 +12,8 @@ pub fn from_string_test() {
   |> should.be_false
 
   let assert Error(_) = regex.from_string("[0-9")
+
+  Nil
 }
 
 pub fn compile_test() {
