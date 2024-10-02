@@ -1,3 +1,4 @@
+//#load "../../../compiler-core/src/fsharp/prelude.fs"
 namespace Gleam
 
 open gleam
@@ -383,23 +384,16 @@ module Dynamic =
                     found = found
                     path = [] } ]
 
-    let decode_option (Dynamic(data) as dyn) : Result<Option<'a>, DecodeErrors> =
-        match classify dyn with
-        | "Option" ->
-            match data with
-            | :? Option<'a> as data -> Ok(data)
-            | _ ->
-                Error
-                    [ { expected = "Option"
-                        found = "Unknown"
-                        path = [] } ]
-        | found ->
-            Error
-                [ { expected = "Option"
-                    found = found
-                    path = [] } ]
+    let decode_option (Dynamic(data) as dyn) (decoder: Decoder<'a>) : Result<Option<'a>, DecodeErrors> =
+        if isNull data || data = box None then
+            Ok(None)
+        else
+            match decoder dyn with
+            | Ok value -> Ok(Some value)
+            | Error errors -> Error errors
 
-    let decode_map (Dynamic(data) as dyn) : Result<Map<string, Dynamic>, DecodeErrors> =
+
+    let decode_map (Dynamic(data) as dyn) : Result<Dict<Dynamic, Dynamic>, DecodeErrors> =
         match classify dyn with
         | "Map" ->
             match data with
@@ -535,8 +529,8 @@ module Dynamic =
                     found = found
                     path = [] } ]
 
-    let tuple_get (UnknownTuple(values) as tuple) (index: int) : Result<Dynamic, DecodeErrors> =
-        match List.tryItem index values with
+    let tuple_get (UnknownTuple(values) as tuple) (index: int64) : Result<Dynamic, DecodeErrors> =
+        match List.tryItem (int index) values with
         | Some(value) -> Ok(value)
         | None ->
             Error
@@ -544,7 +538,7 @@ module Dynamic =
                     found = "Unknown"
                     path = [ string index ] } ]
 
-    let tuple_size (UnknownTuple(values)) = List.length values
+    let tuple_size (UnknownTuple(values)) = List.length values |> int64
 
 module IO =
     let print (string: string) = Console.Write(string)
