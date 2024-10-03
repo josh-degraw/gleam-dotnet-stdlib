@@ -1,4 +1,6 @@
-//#load "../../../compiler-core/src/fsharp/prelude.fs"
+#if INTERACTIVE
+#load "../../../compiler-core/src/fsharp/prelude.fs"
+#endif
 namespace Gleam
 
 open gleam
@@ -384,6 +386,8 @@ module Dynamic =
                     found = found
                     path = [] } ]
 
+    type Decoder<'t> = Dynamic -> Result<'t, DecodeErrors>
+
     let decode_option (Dynamic(data) as dyn) (decoder: Decoder<'a>) : Result<Option<'a>, DecodeErrors> =
         if isNull data || data = box None then
             Ok(None)
@@ -397,7 +401,7 @@ module Dynamic =
         match classify dyn with
         | "Map" ->
             match data with
-            | :? Map<string, obj> as data -> Ok(Map.map (fun k v -> Dynamic(v)) data)
+            | :? Map<Dynamic, obj> as data -> Ok(Map.map (fun k v -> Dynamic(v)) data)
             | _ ->
                 Error
                     [ { expected = "Map"
@@ -545,7 +549,6 @@ module IO =
 
     let println (string: string) = Console.WriteLine(string)
 
-
     let print_error (string: string) = Console.Error.Write(string)
 
     let println_error (string: string) = Console.Error.WriteLine(string)
@@ -639,7 +642,11 @@ module Uri =
 
     let percent_encode (value: string) = NativeUri.EscapeDataString(value)
 
-    let percent_decode (value: string) = NativeUri.UnescapeDataString(value)
+    let percent_decode (value: string) =
+        try
+            NativeUri.UnescapeDataString(value) |> Ok
+        with ex ->
+            Error()
 
     let parse (uri_string: string) : Result<Uri, unit> =
         try
@@ -649,7 +656,7 @@ module Uri =
                 { scheme = uri.Scheme |> Util.option_of_string
                   userinfo = uri.UserInfo |> Util.option_of_string
                   host = uri.Host |> Util.option_of_string
-                  port = uri.Port |> Some
+                  port = uri.Port |> int64 |> Some
                   path = uri.AbsolutePath
                   query = uri.Query |> Util.option_of_string
                   fragment = uri.Fragment |> Util.option_of_string }
