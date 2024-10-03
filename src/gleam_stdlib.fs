@@ -73,7 +73,7 @@ module Int =
 
     let parse (a: string) =
         try
-            Ok(System.Convert.ToInt32(a))
+            Ok(System.Convert.ToInt64(a))
         with _ ->
             Error()
 
@@ -320,7 +320,7 @@ module Dynamic =
 
     let decode_int (Dynamic(data) as dyn) : Result<int64, DecodeErrors> =
         match (classify dyn) with
-        | "Int" -> Ok(Convert.ToInt32 data)
+        | "Int" -> Ok(Convert.ToInt64 data)
         | found ->
             Error
                 [ { expected = "Int"
