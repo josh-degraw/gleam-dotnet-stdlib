@@ -47,8 +47,7 @@ let should_not_equal (a: obj) (b: obj) =
         failwithf "Expected %A to not equal %A" a b
 
 // Main function
-[<EntryPoint>]
-let main (_) =
+let main () =
     let mutable passes = 0
     let mutable failures = 0
 

@@ -626,40 +626,6 @@ module Regex =
 
     let replace (regex: Regex) (content: string) (substitute: string) : string = regex.Replace(content, substitute)
 
-module Set =
-    // TODO: Update gleam impl to use these functions
-    let empty () = Set.empty
-    let size (set: Set<'a>) = set.Count
-    let insert (set: Set<'a>) (value: 'a) = set.Add(value)
-    let contains (set: Set<'a>) (value: 'a) = set.Contains(value)
-
-    let delete (set: Set<'a>) (value: 'a) = set.Remove(value)
-    let to_list (set: Set<'a>) = set |> Set.toList
-
-    let from_list (list: list<'a>) = Set.ofList list
-
-    let fold (set: Set<'a>) (initial: 'b) (reducer: 'b -> 'a -> 'b) =
-        set |> Set.fold (fun acc x -> reducer acc x) initial
-
-    let filter (predicate: 'a -> bool) (set: Set<'a>) = set |> Set.filter predicate
-
-    let map (set: Set<'a>) (fn: 'a -> 'b) = set |> Set.map fn
-
-    let drop (set: Set<'a>) (disallowed: list<'a>) =
-        disallowed |> List.fold (fun acc x -> Set.remove x acc) set
-
-    let take (set: Set<'a>) (allowed: list<'a>) =
-        allowed |> List.fold (fun acc x -> Set.add x acc) set
-
-
-    let union (first: Set<'a>) (second: Set<'a>) = Set.union first second
-
-    let intersection (first: Set<'a>) (second: Set<'a>) = Set.intersect first second
-
-    let difference (first: Set<'a>) (second: Set<'a>) = Set.difference first second
-
-    let symmetric_difference (first: Set<'a>) (second: Set<'a>) = Set.difference first second
-
 module Uri =
     type NativeUri = System.Uri
     type Uri = gleam.Uri
@@ -709,3 +675,5 @@ module List =
     let append (first: list<'a>) (second: list<'a>) = List.append first second
 
     let concat (lists: list<list<'a>>) = List.concat lists
+
+    let each (list: list<'a>) (f: 'a -> 'b) : unit = List.iter (f >> ignore) list

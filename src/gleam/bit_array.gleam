@@ -8,14 +8,14 @@ import gleam/string
 ///
 @external(erlang, "gleam_stdlib", "identity")
 @external(javascript, "../gleam_stdlib.mjs", "bit_array_from_string")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.from_string")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.BitArray.from_string")
 pub fn from_string(x: String) -> BitArray
 
 /// Returns an integer which is the number of bytes in the bit array.
 ///
 @external(erlang, "erlang", "byte_size")
 @external(javascript, "../gleam_stdlib.mjs", "length")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.byte_size")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.BitArray.byte_size")
 pub fn byte_size(x: BitArray) -> Int
 
 /// Creates a new bit array by joining two bit arrays.
@@ -41,7 +41,7 @@ pub fn append(to first: BitArray, suffix second: BitArray) -> BitArray {
 ///
 @external(erlang, "gleam_stdlib", "bit_array_slice")
 @external(javascript, "../gleam_stdlib.mjs", "bit_array_slice")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.slice")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.BitArray.slice")
 pub fn slice(
   from string: BitArray,
   at position: Int,
@@ -72,7 +72,7 @@ fn do_is_utf8(bits: BitArray) -> Bool {
 }
 
 @target(fsharp)
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.is_utf8")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.BitArray.is_utf8")
 fn do_is_utf8(bits: BitArray) -> Bool
 
 /// Converts a bit array to a string.
@@ -87,7 +87,7 @@ pub fn to_string(bits: BitArray) -> Result(String, Nil) {
 fn unsafe_to_string(a: BitArray) -> String
 
 @external(javascript, "../gleam_stdlib.mjs", "bit_array_to_string")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.to_string")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.BitArray.to_string")
 fn do_to_string(bits: BitArray) -> Result(String, Nil) {
   case is_utf8(bits) {
     True -> Ok(unsafe_to_string(bits))
@@ -106,14 +106,14 @@ fn do_to_string(bits: BitArray) -> Result(String, Nil) {
 ///
 @external(erlang, "gleam_stdlib", "bit_array_concat")
 @external(javascript, "../gleam_stdlib.mjs", "bit_array_concat")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.concat")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.BitArray.concat")
 pub fn concat(bit_arrays: List(BitArray)) -> BitArray
 
 /// Encodes a BitArray into a base 64 encoded string.
 ///
 @external(erlang, "gleam_stdlib", "bit_array_base64_encode")
 @external(javascript, "../gleam_stdlib.mjs", "encode64")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.base64_encode")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.BitArray.base64_encode")
 pub fn base64_encode(input: BitArray, padding: Bool) -> String
 
 /// Decodes a base 64 encoded string into a `BitArray`.
@@ -128,7 +128,7 @@ pub fn base64_decode(encoded: String) -> Result(BitArray, Nil) {
 
 @external(erlang, "gleam_stdlib", "base_decode64")
 @external(javascript, "../gleam_stdlib.mjs", "decode64")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.base64_decode")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.BitArray.base64_decode")
 fn decode64(a: String) -> Result(BitArray, Nil)
 
 /// Encodes a `BitArray` into a base 64 encoded string with URL and filename safe alphabet.
@@ -150,12 +150,12 @@ pub fn base64_url_decode(encoded: String) -> Result(BitArray, Nil) {
 
 @external(erlang, "binary", "encode_hex")
 @external(javascript, "../gleam_stdlib.mjs", "base16_encode")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.base16_encode")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.BitArray.base16_encode")
 pub fn base16_encode(input: BitArray) -> String
 
 @external(erlang, "gleam_stdlib", "base16_decode")
 @external(javascript, "../gleam_stdlib.mjs", "base16_decode")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.base16_decode")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.BitArray.base16_decode")
 pub fn base16_decode(input: String) -> Result(BitArray, Nil)
 
 /// Converts a bit array to a string containing the decimal value of each byte.
@@ -175,7 +175,7 @@ pub fn inspect(input: BitArray) -> String {
 }
 
 @external(javascript, "../gleam_stdlib.mjs", "bit_array_inspect")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.inspect")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.BitArray.inspect")
 fn do_inspect(input: BitArray, accumulator: String) -> String {
   case input {
     <<>> -> accumulator
@@ -249,5 +249,5 @@ pub fn compare(a: BitArray, with b: BitArray) -> order.Order {
 }
 
 @external(erlang, "gleam_stdlib", "bit_array_to_int_and_size")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.to_int_and_size")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.BitArray.to_int_and_size")
 fn bit_array_to_int_and_size(a: BitArray) -> #(Int, Int)

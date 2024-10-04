@@ -54,7 +54,7 @@ import gleam/pair
 /// ```
 ///
 @external(erlang, "erlang", "length")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.List.length")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.List.length")
 pub fn length(of list: List(a)) -> Int {
   count_length(list, 0)
 }
@@ -124,7 +124,7 @@ pub fn count(list: List(a), where predicate: fn(a) -> Bool) -> Int {
 /// ```
 ///
 @external(erlang, "lists", "reverse")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.List.reverse")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.List.reverse")
 pub fn reverse(xs: List(a)) -> List(a) {
   do_reverse(xs, [])
 }
@@ -193,7 +193,7 @@ pub fn is_empty(list: List(a)) -> Bool {
 /// // -> True
 /// ```
 ///
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.List.contains")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.List.contains")
 pub fn contains(list: List(a), any elem: a) -> Bool {
   case list {
     [] -> False
@@ -649,7 +649,7 @@ pub fn wrap(item: a) -> List(a) {
 /// ```
 ///
 @external(erlang, "lists", "append")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.List.append")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.List.append")
 pub fn append(first: List(a), second: List(a)) -> List(a) {
   do_append(reverse(first), second)
 }
@@ -705,7 +705,7 @@ fn do_concat(lists: List(List(a)), acc: List(a)) -> List(a) {
 /// // -> [1, 2, 3]
 /// ```
 ///
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.List.concat")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.List.concat")
 pub fn concat(lists: List(List(a))) -> List(a) {
   do_concat(lists, [])
 }
@@ -722,7 +722,7 @@ pub fn concat(lists: List(List(a))) -> List(a) {
 /// // -> [1, 2, 3]
 /// ```
 ///
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.List.concat")
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.List.concat")
 pub fn flatten(lists: List(List(a))) -> List(a) {
   do_concat(lists, [])
 }
@@ -1795,6 +1795,7 @@ pub fn key_set(list: List(#(a, b)), key: a, value: b) -> List(#(a, b)) {
 /// // 3
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fsx", "Gleam.List.each")
 pub fn each(list: List(a), f: fn(a) -> b) -> Nil {
   case list {
     [] -> Nil
