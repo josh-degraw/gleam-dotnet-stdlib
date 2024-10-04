@@ -551,6 +551,7 @@ pub fn fold(
 /// The order of elements in the iteration is an implementation detail that
 /// should not be relied upon.
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Map.each")
 pub fn each(dict: Dict(k, v), fun: fn(k, v) -> b) -> Nil {
   fold(dict, Nil, fn(nil, k, v) {
     fun(k, v)

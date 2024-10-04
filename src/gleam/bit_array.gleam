@@ -170,6 +170,7 @@ pub fn base16_decode(input: String) -> Result(BitArray, Nil)
 /// // -> "<<100, 5:size(3)>>"
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.inspect")
 pub fn inspect(input: BitArray) -> String {
   do_inspect(input, "<<") <> ">>"
 }
@@ -221,6 +222,7 @@ fn do_inspect(input: BitArray, accumulator: String) -> String {
 /// Only supported on Erlang target for now.
 ///
 @external(javascript, "../gleam_stdlib.mjs", "bit_array_compare")
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.compare")
 pub fn compare(a: BitArray, with b: BitArray) -> order.Order {
   case a, b {
     <<first_byte, first_rest:bits>>, <<second_byte, second_rest:bits>> ->

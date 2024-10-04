@@ -39,8 +39,8 @@ module Map =
 
     let filter (predicate: 'a -> 'b -> bool) (dict: Map<'a, 'b>) = Map.filter predicate dict
 
-    // let merge (dict: Map<'a, 'b>) (new_entries: Map<'a, 'b>) =
-    //     Map.fold (fun acc key value -> Map.add key value acc) dict new_entries
+    let each (list: Map<'a, 'b>) (f: 'a -> 'b -> 'c) : unit =
+        Map.iter (fun a b -> f a b |> ignore) list
 
     let remove (key: 'a) (dict: Map<'a, 'b>) = Map.remove key dict
 
@@ -267,51 +267,43 @@ module String =
 
 module BitArray =
 
-    let from_string (s: string) =
+    let from_string (s: string) : BitArray =
         raise (NotImplementedException("BitArray.from_string not yet implemented"))
 
-    let byte_size arr =
+    let byte_size (arr: BitArray) : int64 =
         raise (NotImplementedException("BitArray.byte_size not yet implemented"))
 
-    let append first second =
-        raise (NotImplementedException("BitArray.append not yet implemented"))
-
-    let concat first second =
+    let concat (bit_arrays: BitArray list) : BitArray =
         raise (NotImplementedException("BitArray.concat not yet implemented"))
 
-    let slice (arr: BitArray) (start: int64) (length: int64) =
+    let slice (arr: BitArray) (start: int64) (length: int64) : Result<BitArray, unit> =
         raise (NotImplementedException("BitArray.slice not yet implemented"))
 
-    let is_utf8 (arr: BitArray) =
+    let is_utf8 (arr: BitArray) : bool =
         raise (NotImplementedException("BitArray.is_utf8 not yet implemented"))
 
-    let to_string (arr: BitArray) =
+    let to_string (arr: BitArray) : Result<string, unit> =
         raise (NotImplementedException("BitArray.to_string not yet implemented"))
 
-    let base64_encode (input: BitArray) (padding: bool) =
+    let base64_encode (input: BitArray) (padding: bool) : string =
         raise (NotImplementedException("BitArray.base64_encode not yet implemented"))
 
-    let base64_decode (encoded: String) =
+    let base64_decode (encoded: string) : Result<BitArray, unit> =
         raise (NotImplementedException("BitArray.base64_decode not yet implemented"))
 
-    let base16_encode (input: BitArray) =
+    let base16_encode (input: BitArray) : string =
         raise (NotImplementedException("BitArray.base16_encode not yet implemented"))
 
-    let base16_decode (input: String) =
+    let base16_decode (input: string) : Result<BitArray, unit> =
         raise (NotImplementedException("BitArray.base16_decode not yet implemented"))
-
-    let base64_url_encode (input: BitArray) (padding: bool) =
-        raise (NotImplementedException("BitArray.base64_url_encode not yet implemented"))
-
-    let base64_url_decode (encoded: String) =
-        raise (NotImplementedException("BitArray.base64_url_decode not yet implemented"))
 
     let inspect (arr: BitArray) =
         raise (NotImplementedException("BitArray.inspect not yet implemented"))
 
-    // let compare (a: BitArray) (b: BitArray) = raise (NotImplementedException("BitArray.compare not yet implemented"))
+    let compare (a: BitArray) (b: BitArray) : Order =
+        raise (NotImplementedException("BitArray.compare not yet implemented"))
 
-    let to_int_and_size (arr: BitArray) =
+    let to_int_and_size (arr: BitArray) : (int64 * int64) =
         raise (NotImplementedException("BitArray.to_int_and_size not yet implemented"))
 
 
