@@ -1,3 +1,4 @@
+module gleam_stdlib_test_ffi
 // This file is a modified copy of gleeunit 0.10.0's <https://github.com/lpil/gleeunit/blob/main/src/gleeunit_ffi.mjs>
 // Converted to F#
 
@@ -32,6 +33,18 @@ let crash message = raise (Exception(message))
 
 // Write function
 let write (message: string) = Console.Write(message)
+
+let should_equal (a: obj) (b: obj) =
+    if a.Equals(b) then
+        ()
+    else
+        failwithf "Expected %A to equal %A" a b
+
+let should_not_equal (a: obj) (b: obj) =
+    if not (a.Equals(b)) then
+        ()
+    else
+        failwithf "Expected %A to not equal %A" a b
 
 // Main function
 [<EntryPoint>]

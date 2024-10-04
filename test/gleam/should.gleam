@@ -7,6 +7,7 @@
 import gleam/string
 
 @external(erlang, "gleam_stdlib_test_ffi", "should_equal")
+@external(fsharp, "../gleam_stdlib_test_ffi.fsx", "gleam_stdlib_test_ffi.should_equal")
 pub fn equal(a: a, b: a) -> Nil {
   case a == b {
     True -> Nil
@@ -23,6 +24,7 @@ pub fn equal(a: a, b: a) -> Nil {
 }
 
 @external(erlang, "gleam_stdlib_test_ffi", "should_not_equal")
+@external(fsharp, "../gleam_stdlib_test_ffi.fsx", "gleam_stdlib_test_ffi.should_not_equal")
 pub fn not_equal(a: a, b: a) -> Nil {
   case a != b {
     True -> Nil

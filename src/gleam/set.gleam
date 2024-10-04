@@ -36,6 +36,7 @@ pub opaque type Set(member) {
 
 /// Creates a new empty set.
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.init")
 pub fn new() -> Set(member) {
   Set(dict.new())
 }
@@ -54,6 +55,7 @@ pub fn new() -> Set(member) {
 /// // -> 2
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.size")
 pub fn size(set: Set(member)) -> Int {
   dict.size(set.dict)
 }
@@ -72,6 +74,7 @@ pub fn size(set: Set(member)) -> Int {
 /// // -> False
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.is_empty")
 pub fn is_empty(set: Set(member)) -> Bool {
   set == new()
 }
@@ -90,6 +93,7 @@ pub fn is_empty(set: Set(member)) -> Bool {
 /// // -> 2
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.insert")
 pub fn insert(into set: Set(member), this member: member) -> Set(member) {
   Set(dict: dict.insert(set.dict, member, token))
 }
@@ -114,6 +118,7 @@ pub fn insert(into set: Set(member), this member: member) -> Set(member) {
 /// // -> False
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.has_key")
 pub fn contains(in set: Set(member), this member: member) -> Bool {
   set.dict
   |> dict.get(member)
@@ -135,6 +140,7 @@ pub fn contains(in set: Set(member), this member: member) -> Bool {
 /// // -> False
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.delete")
 pub fn delete(from set: Set(member), this member: member) -> Set(member) {
   Set(dict: dict.delete(set.dict, member))
 }
@@ -153,6 +159,7 @@ pub fn delete(from set: Set(member), this member: member) -> Set(member) {
 /// // -> [2]
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.to_list")
 pub fn to_list(set: Set(member)) -> List(member) {
   dict.keys(set.dict)
 }
@@ -171,6 +178,7 @@ pub fn to_list(set: Set(member)) -> List(member) {
 /// // -> [1, 2, 3, 4]
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.from_list")
 pub fn from_list(members: List(member)) -> Set(member) {
   let dict =
     list.fold(over: members, from: dict.new(), with: fn(m, k) {
@@ -194,6 +202,7 @@ pub fn from_list(members: List(member)) -> Set(member) {
 /// // -> 13
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.fold")
 pub fn fold(
   over set: Set(member),
   from initial: acc,
@@ -218,6 +227,7 @@ pub fn fold(
 /// // -> [4, 6, 44]
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.filter")
 pub fn filter(
   in set: Set(member),
   keeping predicate: fn(member) -> Bool,
@@ -236,6 +246,7 @@ pub fn filter(
 /// |> to_list
 /// // -> [2, 4, 6, 8]
 /// ```
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.map")
 pub fn map(set: Set(member), with fun: fn(member) -> mapped) -> Set(mapped) {
   fold(over: set, from: new(), with: fn(acc, member) {
     insert(acc, fun(member))
@@ -253,6 +264,7 @@ pub fn map(set: Set(member), with fun: fn(member) -> mapped) -> Set(mapped) {
 /// |> to_list
 /// // -> [2, 4]
 /// ```
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.drop")
 pub fn drop(from set: Set(member), drop disallowed: List(member)) -> Set(member) {
   list.fold(over: disallowed, from: set, with: delete)
 }
@@ -271,10 +283,12 @@ pub fn drop(from set: Set(member), drop disallowed: List(member)) -> Set(member)
 /// // -> [1, 3]
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.take")
 pub fn take(from set: Set(member), keeping desired: List(member)) -> Set(member) {
   Set(dict.take(from: set.dict, keeping: desired))
 }
 
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.order")
 fn order(first: Set(member), second: Set(member)) -> #(Set(member), Set(member)) {
   case dict.size(first.dict) > dict.size(second.dict) {
     True -> #(first, second)
@@ -293,6 +307,7 @@ fn order(first: Set(member), second: Set(member)) -> #(Set(member), Set(member))
 /// // -> [1, 2, 3]
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.union")
 pub fn union(of first: Set(member), and second: Set(member)) -> Set(member) {
   let #(larger, smaller) = order(first, second)
   fold(over: smaller, from: larger, with: insert)
@@ -309,6 +324,7 @@ pub fn union(of first: Set(member), and second: Set(member)) -> Set(member) {
 /// // -> [2]
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.intersection")
 pub fn intersection(
   of first: Set(member),
   and second: Set(member),
@@ -327,6 +343,7 @@ pub fn intersection(
 /// // -> [1]
 /// ```
 ///
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.Set.difference")
 pub fn difference(
   from first: Set(member),
   minus second: Set(member),

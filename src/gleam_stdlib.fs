@@ -42,6 +42,31 @@ module Map =
 
     let remove (key: 'a) (dict: Map<'a, 'b>) = Map.remove key dict
 
+module Set =
+    let init () = Set.empty
+    let size set = Set.count set |> int64
+    let is_empty set = Set.isEmpty set
+    let insert set key = Set.add key set
+    let has_key set key = Set.contains key set
+    let delete set key = Set.remove key set
+    let to_list set = Set.toList set
+    let from_list set = Set.ofList set
+    let fold set acc reducer = Set.fold reducer acc set
+    let filter set predicate = Set.filter predicate set
+    let map set f = Set.map f set
+    let drop set keys = Set.difference set (Set.ofList keys)
+    let take set keys = Set.intersect set (Set.ofList keys)
+
+    let order first second =
+        if Set.count first > Set.count second then
+            (first, second)
+        else
+            (second, first)
+
+    let union first second = Set.union first second
+    let intersection first second = Set.intersect first second
+    let difference first second = Set.difference first second
+
 
 module Float =
 
@@ -196,9 +221,9 @@ module String =
         let index = x.IndexOf(substring)
 
         if index = -1 then
-            None
+            Error()
         else
-            Some(x.Substring(0, index), x.Substring(index + substring.Length))
+            Ok(x.Substring(0, index), x.Substring(index + substring.Length))
 
     let join (strings: string list) (separator: string) = String.concat separator strings
 
@@ -557,12 +582,8 @@ module IO =
     let println_error (string: string) = Console.Error.WriteLine(string)
 
     /// Writes a value to standard error (stderr) yielding Gleam syntax.
-    ///
-    /// The value is returned after being printed so it can be used in pipelines.
-    ///
-    let debug (term: 'a) =
-        eprintfn "%A" term
-        term
+    let debug (term: 'a) = eprintfn "%A" term
+
 
 module Regex =
     type Match = gleam.Match
