@@ -1,3 +1,5 @@
+// This is only loaded here to aid during development of the standard library itself
+// where changing the file to an fsx file yields better type information
 #if INTERACTIVE
 #load "../../../compiler-core/src/fsharp/prelude.fs"
 #endif
@@ -83,7 +85,7 @@ module Float =
 
     let inline to_float (a) = float (a)
 
-    let power (base': float) (exponent: float) = pown base' (int exponent)
+    let power (base': float) (exponent: float) = base' ** exponent
 
     let random () = System.Random().NextDouble()
 
@@ -677,3 +679,50 @@ module List =
     let concat (lists: list<list<'a>>) = List.concat lists
 
     let each (list: list<'a>) (f: 'a -> 'b) : unit = List.iter (f >> ignore) list
+
+// module rec Iterator =
+//     type Iterator<'a> = System.Collections.Generic.IEnumerable<'a>
+
+//     type Step<'element, 'accumulator> =
+//         | Next of element: 'element * accumulator: 'accumulator
+//         | Done
+//     type Action<'element> =
+//         // Dedicated to Electric Six
+//         // https://youtu.be/_30t2dzEgiw?t=162
+//         | Stop
+//         | Continue of 'element * (unit -> Action<'element>)
+
+//     let stop<'a> () = Seq.empty<'a>
+
+//     // let rec do_unfold
+//     //     (initial: 'acc)
+//     //     (f: 'acc -> Step<'element, 'acc>)
+//     //     =
+//     //     fun () ->
+
+//     //         match f(initial) with
+//     //         | Next(x, acc) ->
+//     //             let next = do_unfold(acc, f)
+//     //             Continue(x, next)
+//     //         | Done -> Stop
+
+//     let private do_unfold (initial: 'acc) (f: 'acc -> Step<'element, 'acc>): unit -> Action<'element> = begin
+//         fun() -> begin
+//             match f initial with
+//             | (Next(x, acc)) ->
+//                 Continue(x, (do_unfold acc f))
+//             | (Done) ->
+//                 Stop
+//         end
+//     end
+
+//     [<TailCall>]
+//     let unfold (initial: 'acc) (f: 'acc -> Step<'element, 'acc>) : Iterator<'element> =
+//         let rec loop acc =
+//             match f (acc) with
+//             | Done -> Seq.empty
+//             | Next(element, newAcc) ->
+//                 seq {
+//                     yield element
+//                     yield! loop newAcc
+//                 }
