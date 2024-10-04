@@ -5,7 +5,6 @@ namespace Gleam
 
 open gleam
 open gleam.Prelude
-open gleam.Prelude.Builtins
 open System
 
 module Util =
@@ -138,9 +137,13 @@ module StringBuilder =
         for i in 0 .. a.Length do
             a[i] <- System.Char.ToLower(a[i])
 
+        a
+
     let uppercase (a: StringBuilder) =
         for i in 0 .. a.Length do
             a[i] <- System.Char.ToUpper(a[i])
+
+        a
 
     let reverse (a: StringBuilder) =
         a.ToString().ToCharArray()
@@ -286,8 +289,8 @@ module BitArray =
 
 
 module Dynamic =
-    type DecodeErrors = gleam.Prelude.Builtins.DecodeErrors
-    type Dynamic = gleam.Prelude.Builtins.Dynamic
+    type DecodeErrors = gleam.DecodeErrors
+    type Dynamic = gleam.Dynamic
 
     let from (a: obj) = Dynamic(a)
 
@@ -413,11 +416,11 @@ module Dynamic =
                     found = found
                     path = [] } ]
 
-    let decode_field (Dynamic(data) as dyn) (name: string) : Result<Option<Dynamic>, DecodeErrors> =
+    let decode_field (Dynamic(data) as dyn) (name: 'name) : Result<Option<Dynamic>, DecodeErrors> =
         match classify dyn with
         | "Map" ->
             match data with
-            | :? Map<string, obj> as data -> Map.tryFind name data |> Option.map Dynamic |> Ok
+            | :? Map<'name, obj> as data -> Map.tryFind name data |> Option.map Dynamic |> Ok
             | _ ->
                 Error
                     [ { expected = "Map"
@@ -562,7 +565,7 @@ module IO =
         term
 
 module Regex =
-    type Match = gleam.Prelude.Builtins.Match
+    type Match = gleam.Match
     type RegexOptions = System.Text.RegularExpressions.RegexOptions
     type Regex = System.Text.RegularExpressions.Regex
 
@@ -638,7 +641,7 @@ module Set =
 
 module Uri =
     type NativeUri = System.Uri
-    type Uri = gleam.Prelude.Builtins.Uri
+    type Uri = gleam.Uri
 
     let percent_encode (value: string) = NativeUri.EscapeDataString(value)
 
