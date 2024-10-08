@@ -72,16 +72,30 @@ module Set =
 
 module Float =
 
+    let numberFormatInfo = System.Globalization.NumberFormatInfo.CurrentInfo
+
+    /// For some reason gleam float parsing expects string values must _always_ be floating point
+    /// (include a decimal point)
     let parse_float (a: string) =
-        match System.Double.TryParse(a) with
-        | (true, v) -> Ok v
-        | (false, _) -> Error()
+        if not (a.Contains numberFormatInfo.NumberDecimalSeparator) then
+            Error()
+        else
+            match System.Double.TryParse(a) with
+            | (true, v) -> Ok v
+            | (false, _) -> Error()
 
     let floor (a: float) = floor (a)
 
     let ceiling (a: float) = ceil (a)
 
-    let round (a: float) = round (a) |> int64
+    // For some reason gleam rounding doesn't produce the same output as .NET rounding so we need to customize a bit
+    let round (a: float) =
+        if a >= 0 then
+            if (a - floor (a)) < 0.49999 then round (a) else ceiling (a)
+            |> int64
+        else
+            if (a - ceiling (a)) < 0.49999 then round (a) else floor (a)
+            |> int64
 
     let inline to_float (a) = float (a)
 
@@ -93,7 +107,7 @@ module Float =
 
     let truncate (a: float) = int64 (a)
 
-    let to_string (a: float) = a.ToString()
+    let to_string (a: float) = a.ToString("F1")
 
 module Int =
 
