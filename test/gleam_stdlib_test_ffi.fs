@@ -77,7 +77,7 @@ let main () =
                     sprintf "%O" e |> printlnRed
                     failures <- failures + 1
 
-    sprintf "\n%d tests, %d failures" (passes + failures) failures
+    sprintf "\n%d/%d tests passed, %d failures" passes (passes + failures) failures
     |> if failures > 0 then printlnRed else printlnGreen
 
     Environment.Exit(failures)
