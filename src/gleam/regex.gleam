@@ -61,13 +61,12 @@ pub fn compile(
 
 @external(erlang, "gleam_stdlib", "compile_regex")
 @external(javascript, "../gleam_stdlib.mjs", "compile_regex")
-fn do_compile(a: String, with options: Options) -> Result(Regex, CompileError){
-  compile_fsharp(a, options.case_insensitive, options.multi_line)
-}
-
-@target(fsharp)
 @external(fsharp, "../gleam_stdlib.fs", "Gleam.Regex.compile")
-fn compile_fsharp(a: String, case_insensitive: Bool, multi_line: Bool) -> Result(Regex, CompileError)
+fn do_compile(a: String, with options: Options) -> Result(Regex, CompileError)
+
+// @target(fsharp)
+// @external(fsharp, "../gleam_stdlib.fs", "Gleam.Regex.compile")
+// fn compile_fsharp(a: String, case_insensitive: Bool, multi_line: Bool) -> Result(Regex, CompileError)
 
 /// Creates a new `Regex`.
 ///

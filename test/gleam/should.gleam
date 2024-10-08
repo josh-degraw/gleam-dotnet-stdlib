@@ -7,7 +7,7 @@
 import gleam/string
 
 @external(erlang, "gleam_stdlib_test_ffi", "should_equal")
-@external(fsharp, "../gleam_stdlib_test_ffi.fsx", "gleam_stdlib_test_ffi.should_equal")
+@external(fsharp, "../../src/gleam_stdlib.fs", "Gleam.Should.equal")
 pub fn equal(a: a, b: a) -> Nil {
   case a == b {
     True -> Nil
@@ -24,7 +24,7 @@ pub fn equal(a: a, b: a) -> Nil {
 }
 
 @external(erlang, "gleam_stdlib_test_ffi", "should_not_equal")
-@external(fsharp, "../gleam_stdlib_test_ffi.fsx", "gleam_stdlib_test_ffi.should_not_equal")
+@external(fsharp, "../../src/gleam_stdlib.fs", "Gleam.Should.not_equal")
 pub fn not_equal(a: a, b: a) -> Nil {
   case a != b {
     True -> Nil
@@ -40,6 +40,7 @@ pub fn not_equal(a: a, b: a) -> Nil {
   }
 }
 
+@external(fsharp, "../../src/gleam_stdlib.fs", "Gleam.Should.be_ok")
 pub fn be_ok(a: Result(a, e)) -> a {
   case a {
     Ok(e) -> e
@@ -47,7 +48,8 @@ pub fn be_ok(a: Result(a, e)) -> a {
   }
 }
 
-pub fn be_error(a) {
+@external(fsharp, "../../src/gleam_stdlib.fs", "Gleam.Should.be_error")
+pub fn be_error(a: Result(a, e)) -> Nil {
   case a {
     Error(_) -> Nil
     _ ->

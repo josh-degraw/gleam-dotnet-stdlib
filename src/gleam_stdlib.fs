@@ -297,8 +297,11 @@ module BitArray =
     let base16_decode (input: string) : Result<BitArray, unit> =
         raise (NotImplementedException("BitArray.base16_decode not yet implemented"))
 
-    let inspect (arr: BitArray) =
+    let inspect (arr: BitArray) : string =
         raise (NotImplementedException("BitArray.inspect not yet implemented"))
+
+    let do_inspect (arr: BitArray) (accumulator: string) : string =
+        raise (NotImplementedException("BitArray.do_inspect not yet implemented"))
 
     let compare (a: BitArray) (b: BitArray) : Order =
         raise (NotImplementedException("BitArray.compare not yet implemented"))
@@ -584,14 +587,14 @@ module Regex =
     type RegexOptions = System.Text.RegularExpressions.RegexOptions
     type Regex = System.Text.RegularExpressions.Regex
 
-    let compile (pattern: string) (case_insensitive: bool) (multi_line: bool) =
+    let compile (pattern: string) (reg_options: gleam.RegexOptions) = // (case_insensitive: bool) (multi_line: bool) =
 
         let mutable options = RegexOptions.Compiled
 
-        if case_insensitive then
+        if reg_options.case_insensitive then
             options <- options ||| RegexOptions.IgnoreCase
 
-        if multi_line then
+        if reg_options.multi_line then
             options <- options ||| RegexOptions.Multiline
 
         try
@@ -671,6 +674,35 @@ module List =
     let concat (lists: list<list<'a>>) = List.concat lists
 
     let each (list: list<'a>) (f: 'a -> 'b) : unit = List.iter (f >> ignore) list
+
+module Should =
+    let equal (a: obj) (b: obj) =
+        if a.Equals(b) then
+            ()
+        else
+            failwithf "Expected %A to equal %A" a b
+
+    let not_equal (a: obj) (b: obj) =
+        if not (a.Equals(b)) then
+            ()
+        else
+            failwithf "Expected %A to not equal %A" a b
+
+    let be_ok (a: Result<'a, 'b>) =
+        match a with
+        | Ok(value) -> value
+        | Error(_) -> failwithf "\n%A\nshould be ok" a
+
+    let be_error (a: Result<'a, 'b>) =
+        match a with
+        | Error(_) -> ()
+        | Ok(_) -> failwithf "\n%A\nshould be error" a
+
+    let be_true (actual: bool) = equal actual true
+
+    let be_false (actual: bool) = equal actual false
+
+    let fail () = failwith "Expected failure"
 
 // module rec Iterator =
 //     type Iterator<'a> = System.Collections.Generic.IEnumerable<'a>
