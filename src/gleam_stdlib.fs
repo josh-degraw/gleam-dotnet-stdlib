@@ -325,20 +325,34 @@ module BitArray =
 
 
 module Dynamic =
+    open System.Collections
+    open System.Collections.Generic
+
     type DecodeErrors = gleam.DecodeErrors
     type Dynamic = gleam.Dynamic
 
-    let from (a: obj) = Dynamic(a)
+    let rec unwrap (Dynamic(data)) : obj =
+        match data with
+        | :? Dynamic as d -> unwrap d
+        | _ -> data
+
+    let rec from (a: obj) =
+        match a with
+        | :? Dynamic as (Dynamic(d)) -> from d
+        | a -> Dynamic(a)
 
     let decode_bit_array (Dynamic(data)) =
         raise (NotImplementedException("Dynamic.bit_array not yet implemented"))
 
-    let classify (Dynamic(data)) =
+    let rec classify (Dynamic(data) as dyn) =
+
         match data with
+        | :? Dynamic as d -> classify d
         | :? string -> "String"
         | :? int64 -> "Int"
         | :? float -> "Float"
         | :? bool -> "Bool"
+        | :? Unit -> "Nil"
         | _ ->
             if data.GetType().IsGenericType then
                 if data.GetType().GetGenericTypeDefinition() = typedefof<Result<_, _>> then
@@ -348,17 +362,20 @@ module Dynamic =
                 elif data.GetType().GetGenericTypeDefinition() = typedefof<Option<_>> then
                     "Option"
                 elif data.GetType().GetGenericTypeDefinition() = typedefof<Map<_, _>> then
-                    "Map"
+                    "Dict"
                 elif data.GetType().GetGenericTypeDefinition().Name.StartsWith("Tuple`") then
-                    "Tuple"
+                    let tupleTypes = FSharp.Reflection.FSharpType.GetTupleElements(data.GetType())
+
+                    $"Tuple of {tupleTypes.Length} elements"
                 else
                     data.GetType().Name
             else
                 data.GetType().Name
 
-
     let decode_int (Dynamic(data) as dyn) : Result<int64, DecodeErrors> =
-        match (classify dyn) with
+        let data = unwrap dyn
+
+        match classify dyn with
         | "Int" -> Ok(Convert.ToInt64 data)
         | found ->
             Error
@@ -366,8 +383,11 @@ module Dynamic =
                     found = found
                     path = [] } ]
 
+
     let decode_float (Dynamic(data) as dyn) : Result<float, DecodeErrors> =
-        match (classify dyn) with
+        let data = unwrap dyn
+
+        match classify dyn with
         | "Float" -> Ok(Convert.ToDouble data)
         | found ->
             Error
@@ -376,7 +396,9 @@ module Dynamic =
                     path = [] } ]
 
     let decode_bool (Dynamic(data) as dyn) : Result<bool, DecodeErrors> =
-        match (classify dyn) with
+        let data = unwrap dyn
+
+        match classify dyn with
         | "Bool" -> Ok(Convert.ToBoolean data)
         | found ->
             Error
@@ -385,7 +407,9 @@ module Dynamic =
                     path = [] } ]
 
     let decode_string (Dynamic(data) as dyn) : Result<string, DecodeErrors> =
-        match (classify dyn) with
+        let data = unwrap dyn
+
+        match classify dyn with
         | "String" -> Ok(Convert.ToString data)
         | found ->
             Error
@@ -394,10 +418,12 @@ module Dynamic =
                     path = [] } ]
 
     let decode_list (Dynamic(data) as dyn) : Result<list<Dynamic>, DecodeErrors> =
-        match (classify dyn) with
+        let data = unwrap dyn
+
+        match classify dyn with
         | "List" ->
             match data with
-            | :? list<obj> as data -> Ok(List.map Dynamic data)
+            | :? System.Collections.IEnumerable as data -> data |> Seq.cast<obj> |> Seq.map Dynamic |> Seq.toList |> Ok
             | _ ->
                 Error
                     [ { expected = "List"
@@ -410,6 +436,8 @@ module Dynamic =
                     path = [] } ]
 
     let decode_result (Dynamic(data) as dyn) : Result<Result<'a, 'b>, DecodeErrors> =
+        let data = unwrap dyn
+
         match classify dyn with
         | "Result" ->
             match data with
@@ -428,6 +456,8 @@ module Dynamic =
     type Decoder<'t> = Dynamic -> Result<'t, DecodeErrors>
 
     let decode_option (Dynamic(data) as dyn) (decoder: Decoder<'a>) : Result<Option<'a>, DecodeErrors> =
+        let data = unwrap dyn
+
         if isNull data || data = box None then
             Ok(None)
         else
@@ -437,140 +467,128 @@ module Dynamic =
 
 
     let decode_map (Dynamic(data) as dyn) : Result<Dict<Dynamic, Dynamic>, DecodeErrors> =
+        let data = unwrap dyn
+
         match classify dyn with
-        | "Map" ->
-            match data with
-            | :? Map<Dynamic, obj> as data -> Ok(Map.map (fun k v -> Dynamic(v)) data)
-            | _ ->
-                Error
-                    [ { expected = "Map"
-                        found = "Unknown"
-                        path = [] } ]
+        | "Dict" ->
+            let data = data :?> IEnumerable
+            let typeArgs = data.GetType().GetGenericArguments()
+            assert (typeArgs.Length = 2)
+            let kvpType = typedefof<KeyValuePair<_, _>>.MakeGenericType(typeArgs)
+
+            seq {
+                for kvp in data do
+                    let key = kvpType.GetProperty("Key").GetValue(kvp)
+                    let value = kvpType.GetProperty("Value").GetValue(kvp)
+                    yield (from key, from value)
+            }
+            |> Map.ofSeq
+            |> Ok
+
         | found ->
             Error
-                [ { expected = "Map"
+                [ { expected = "Dict"
                     found = found
                     path = [] } ]
 
-    let decode_field (Dynamic(data) as dyn) (name: 'name) : Result<Option<Dynamic>, DecodeErrors> =
-        match classify dyn with
-        | "Map" ->
-            match data with
-            | :? Map<'name, obj> as data -> Map.tryFind name data |> Option.map Dynamic |> Ok
-            | _ ->
-                Error
-                    [ { expected = "Map"
-                        found = "Unknown"
-                        path = [] } ]
-        | found ->
-            Error
-                [ { expected = "Map"
-                    found = found
-                    path = [] } ]
+    let decode_field (Dynamic(data) as dyn) (name: obj) : Result<Option<Dynamic>, DecodeErrors> =
+        let map = decode_map dyn
 
+        map |> Result.map (Map.tryFind (from name))
 
+    let private decode_tuple_impl
+        (expectedLength: int option)
+        (Dynamic(data) as dyn)
+        : Result<UnknownTuple, DecodeError> =
+        let data = unwrap dyn
 
-    let decode_tuple (Dynamic(data) as dyn) : Result<UnknownTuple, DecodeErrors> =
-        match classify dyn with
-        | "Tuple" ->
+        let classification = classify dyn
+
+        let expected =
+            match expectedLength with
+            | Some(length) -> $"Tuple of {length} elements"
+            | None -> "Tuple"
+
+        if classification.StartsWith("Tuple") then
             let tupleType = data.GetType()
 
             let values =
-                tupleType.GetGenericArguments()
-                |> Array.mapi (fun i t -> t.GetProperty("Item" + string (i + 1)).GetValue(data))
-                |> Array.map Dynamic
+                FSharp.Reflection.FSharpType.GetTupleElements tupleType
+                |> Array.mapi (fun i _ -> tupleType.GetProperty("Item" + string (i + 1)).GetValue(data))
+                |> Array.map from
                 |> Array.toList
 
             Ok(UnknownTuple(values))
-        | found ->
-            Error
-                [ { expected = "Tuple"
-                    found = found
-                    path = [] } ]
+        else if classification = "List" then
+            let list = decode_list dyn
 
-    let decode_tuple2 (Dynamic(data) as dyn) : Result<(Dynamic * Dynamic), DecodeErrors> =
-        match classify dyn with
-        | "Tuple" ->
-            match data with
-            | :? Tuple<obj, obj> as (a, b) -> Ok((Dynamic(a), Dynamic(b)))
+            match list, expectedLength with
+            | Ok(values), Some(expectedLength) when List.length values = expectedLength -> Ok(UnknownTuple(values))
             | _ ->
                 Error
-                    [ { expected = "Tuple"
-                        found = "Unknown"
-                        path = [] } ]
-        | found ->
+                    { expected = expected
+                      found = classification
+                      path = [] }
+        else
             Error
-                [ { expected = "Tuple"
-                    found = found
-                    path = [] } ]
+                { expected = expected
+                  found = classification
+                  path = [] }
 
-    let decode_tuple3 (Dynamic(data) as dyn) : Result<(Dynamic * Dynamic * Dynamic), DecodeErrors> =
-        match classify dyn with
-        | "Tuple" ->
-            match data with
-            | :? Tuple<obj, obj, obj> as (a, b, c) -> Ok((Dynamic(a), Dynamic(b), Dynamic(c)))
-            | _ ->
-                Error
-                    [ { expected = "Tuple"
-                        found = "Unknown"
-                        path = [] } ]
-        | found ->
-            Error
-                [ { expected = "Tuple"
-                    found = found
-                    path = [] } ]
+    let decode_tuple (dyn) : Result<UnknownTuple, DecodeErrors> =
+        decode_tuple_impl None dyn |> Result.mapError List.singleton
 
-    let decode_tuple4 (Dynamic(data) as dyn) : Result<(Dynamic * Dynamic * Dynamic * Dynamic), DecodeErrors> =
-        match classify dyn with
-        | "Tuple" ->
-            match data with
-            | :? Tuple<obj, obj, obj, obj> as (a, b, c, d) -> Ok((Dynamic(a), Dynamic(b), Dynamic(c), Dynamic(d)))
-            | _ ->
-                Error
-                    [ { expected = "Tuple"
-                        found = "Unknown"
-                        path = [] } ]
-        | found ->
+    let decode_tuple2 (dyn: Dynamic) : Result<(Dynamic * Dynamic), DecodeErrors> =
+        match decode_tuple_impl (Some 2) dyn with
+        | Ok(UnknownTuple([ a; b ])) -> Ok(a, b)
+        | Ok(UnknownTuple(values)) ->
             Error
-                [ { expected = "Tuple"
-                    found = found
+                [ { expected = "Tuple of 2 elements"
+                    found = $"Tuple of {values.Length} elements"
                     path = [] } ]
+        | Error(error) -> Error[error]
 
-    let decode_tuple5 (Dynamic(data) as dyn) : Result<(Dynamic * Dynamic * Dynamic * Dynamic * Dynamic), DecodeErrors> =
-        match classify dyn with
-        | "Tuple" ->
-            match data with
-            | :? Tuple<obj, obj, obj, obj, obj> as (a, b, c, d, e) ->
-                Ok((Dynamic(a), Dynamic(b), Dynamic(c), Dynamic(d), Dynamic(e)))
-            | _ ->
-                Error
-                    [ { expected = "Tuple"
-                        found = "Unknown"
-                        path = [] } ]
-        | found ->
+    let decode_tuple3 (dyn) : Result<(Dynamic * Dynamic * Dynamic), DecodeErrors> =
+        match decode_tuple_impl (Some 3) dyn with
+        | Ok(UnknownTuple([ a; b; c ])) -> Ok(a, b, c)
+        | Ok(UnknownTuple(values)) ->
             Error
-                [ { expected = "Tuple"
-                    found = found
+                [ { expected = "Tuple of 3 elements"
+                    found = $"Tuple of {values.Length} elements"
                     path = [] } ]
+        | Error(error) -> Error[error]
+
+    let decode_tuple4 (dyn: Dynamic) : Result<(Dynamic * Dynamic * Dynamic * Dynamic), DecodeErrors> =
+        match decode_tuple_impl (Some 4) dyn with
+        | Ok(UnknownTuple([ a; b; c; d ])) -> Ok(a, b, c, d)
+        | Ok(UnknownTuple(values)) ->
+            Error
+                [ { expected = "Tuple of 4 elements"
+                    found = $"Tuple of {values.Length} elements"
+                    path = [] } ]
+        | Error(error) -> Error[error]
+
+    let decode_tuple5 (dyn: Dynamic) : Result<(Dynamic * Dynamic * Dynamic * Dynamic * Dynamic), DecodeErrors> =
+        match decode_tuple_impl (Some 5) dyn with
+        | Ok(UnknownTuple([ a; b; c; d; e ])) -> Ok(a, b, c, d, e)
+        | Ok(UnknownTuple(values)) ->
+            Error
+                [ { expected = "Tuple of 5 elements"
+                    found = $"Tuple of {values.Length} elements"
+                    path = [] } ]
+        | Error(error) -> Error[error]
 
     let decode_tuple6
-        (Dynamic(data) as dyn)
+        (dyn: Dynamic)
         : Result<(Dynamic * Dynamic * Dynamic * Dynamic * Dynamic * Dynamic), DecodeErrors> =
-        match classify dyn with
-        | "Tuple" ->
-            match data with
-            | :? Tuple<obj, obj, obj, obj, obj, obj> as (a, b, c, d, e, f) ->
-                Ok((Dynamic(a), Dynamic(b), Dynamic(c), Dynamic(d), Dynamic(e), Dynamic(f)))
-            | _ ->
-                Error
-                    [ { expected = "Tuple"
-                        found = "Unknown"
-                        path = [] } ]
-        | found ->
+        match decode_tuple_impl (Some 6) dyn with
+        | Ok(UnknownTuple([ a; b; c; d; e; f ])) -> Ok(a, b, c, d, e, f)
+        | Ok(UnknownTuple(values)) ->
             Error
-                [ { expected = "Tuple"
-                    found = found
+                [ { expected = "Tuple of 6 elements"
+                    found = $"Tuple of {values.Length} elements"
                     path = [] } ]
+        | Error(error) -> Error[error]
 
     let tuple_get (UnknownTuple(values) as tuple) (index: int64) : Result<Dynamic, DecodeErrors> =
         match List.tryItem (int index) values with
@@ -691,13 +709,21 @@ module List =
 
 module Should =
     let equal (a: obj) (b: obj) =
-        if a.Equals(b) then
+        if isNull a && isNull b then
+            ()
+        elif isNull a || isNull b then
+            failwithf "Expected %A to equal %A" a b
+        elif a.Equals(b) then
             ()
         else
             failwithf "Expected %A to equal %A" a b
 
     let not_equal (a: obj) (b: obj) =
-        if not (a.Equals(b)) then
+        if isNull a && isNull b then
+            failwithf "Expected %A to not equal %A" a b
+        elif isNull a || isNull b then
+            ()
+        elif not (a.Equals(b)) then
             ()
         else
             failwithf "Expected %A to not equal %A" a b

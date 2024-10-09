@@ -18,6 +18,12 @@ let printlnGreen (message: string) =
 let printlnRed (message: string) =
     Console.WriteLine("\u001b[31m{0}\u001b[0m", message)
 
+let printYellow (message: string) =
+    Console.Write("\u001b[33m{0}\u001b[0m", message)
+
+let printlnYellow (message: string) =
+    Console.WriteLine("\u001b[33m{0}\u001b[0m", message)
+
 // let runTest (moduleType: Type) =
 //     printfn "module: %s" moduleType.Name
 //     let methods = moduleType.GetMethods(BindingFlags.Public ||| BindingFlags.Static)
@@ -47,7 +53,7 @@ let printlnRed (message: string) =
 //     totalTests, passed
 
 // Main function to run tests
-let main () =
+let main () : int =
     let mutable passes = 0
     let mutable failures = 0
 
@@ -70,7 +76,12 @@ let main () =
                 with
                 | :? System.Reflection.TargetInvocationException as e ->
                     printfn "\n❌ %s.%s" moduleType.Name m.Name
-                    sprintf "%O" e.InnerException |> printlnRed
+
+                    if e.InnerException.Message.Contains("not yet implemented") then
+                        sprintf "%s" e.InnerException.Message |> printlnYellow
+                    else
+                        sprintf "%O" e.InnerException |> printlnRed
+
                     failures <- failures + 1
                 | e ->
                     printfn "\n❌ %s.%s" moduleType.Name m.Name
@@ -80,5 +91,4 @@ let main () =
     sprintf "\n%d/%d tests passed, %d failures" passes (passes + failures) failures
     |> if failures > 0 then printlnRed else printlnGreen
 
-    Environment.Exit(failures)
     failures
