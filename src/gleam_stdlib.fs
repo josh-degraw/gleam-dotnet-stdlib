@@ -119,13 +119,49 @@ module Int =
 
     let base_parse (a: string) (b: int64) =
         try
-            Ok(System.Convert.ToInt64(a, int b))
+            let neg = a.StartsWith("-")
+
+            if neg then
+                Ok(- System.Convert.ToInt64(a.Substring(1), int b))
+            else
+                Ok(System.Convert.ToInt64(a, int b))
         with _ ->
             Error()
 
     let to_string (a: int64) = a.ToString()
 
-    let to_base_string (a: int64) (b: int64) = System.Convert.ToString(a, int b)
+    let private to_base36_string (value: int64) =
+        let neg = value < 0
+        let base' = 36L
+        let chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+        let result = System.Text.StringBuilder()
+
+        let mutable current = abs value
+
+        while current > 0 do
+            result.Insert(0, chars[int (current % base')]) |> ignore
+            current <- current / 36L
+
+        if neg then
+            result.Insert(0, "-") |> ignore
+
+        result.ToString()
+
+
+    // By default .NET Only supports base 2, 8, 10, or 16, so we have to have our own implementation for base 36
+    let to_base_string (a: int64) (b: int64) : string =
+        match b with
+        | 2L
+        | 8L
+        | 10L
+        | 16L ->
+            if a < 0 then
+                "-" + System.Convert.ToString(abs (a), int b).ToUpper()
+            else
+                System.Convert.ToString(a, int b).ToUpper()
+        | 36L -> to_base36_string a
+        | _ -> invalidArg "b" $"Invalid base: %i{b}"
 
     let inline to_float a = float (a)
 
