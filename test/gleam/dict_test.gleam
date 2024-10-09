@@ -84,7 +84,9 @@ pub fn get_test() {
   m
   |> dict.get(C)
   |> should.equal(Error(Nil))
+}
 
+pub fn get_bytes_test() {
   let proplist = [#(<<1, 2, 3>>, 0), #(<<3, 2, 1>>, 1)]
   let m = dict.from_list(proplist)
 

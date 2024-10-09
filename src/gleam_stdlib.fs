@@ -148,7 +148,6 @@ module Int =
 
         result.ToString()
 
-
     // By default .NET Only supports base 2, 8, 10, or 16, so we have to have our own implementation for base 36
     let to_base_string (a: int64) (b: int64) : string =
         match b with
@@ -372,10 +371,7 @@ module Dynamic =
         | :? Dynamic as d -> unwrap d
         | _ -> data
 
-    let rec from (a: obj) =
-        match a with
-        | :? Dynamic as (Dynamic(d)) -> from d
-        | a -> Dynamic(a)
+    let inline from (a: obj) = gleam.Dynamic.From(a)
 
     let decode_bit_array (Dynamic(data)) =
         raise (NotImplementedException("Dynamic.bit_array not yet implemented"))
@@ -389,24 +385,30 @@ module Dynamic =
         | :? float -> "Float"
         | :? bool -> "Bool"
         | :? Unit -> "Nil"
+        | :? EmptyTuple -> "Tuple of 0 elements"
         | _ ->
-            if data.GetType().IsGenericType then
-                if data.GetType().GetGenericTypeDefinition() = typedefof<Result<_, _>> then
+
+            let dataType = data.GetType()
+
+            if FSharp.Reflection.FSharpType.IsFunction(dataType) then
+                "Function"
+            elif dataType.IsGenericType then
+                if dataType.GetGenericTypeDefinition() = typedefof<Result<_, _>> then
                     "Result"
-                elif data.GetType().GetGenericTypeDefinition() = typedefof<list<_>> then
+                elif dataType.GetGenericTypeDefinition() = typedefof<list<_>> then
                     "List"
-                elif data.GetType().GetGenericTypeDefinition() = typedefof<Option<_>> then
+                elif dataType.GetGenericTypeDefinition() = typedefof<Option<_>> then
                     "Option"
-                elif data.GetType().GetGenericTypeDefinition() = typedefof<Map<_, _>> then
+                elif dataType.GetGenericTypeDefinition() = typedefof<Map<_, _>> then
                     "Dict"
-                elif data.GetType().GetGenericTypeDefinition().Name.StartsWith("Tuple`") then
-                    let tupleTypes = FSharp.Reflection.FSharpType.GetTupleElements(data.GetType())
+                elif dataType.GetGenericTypeDefinition().Name.StartsWith("Tuple`") then
+                    let tupleTypes = FSharp.Reflection.FSharpType.GetTupleElements(dataType)
 
                     $"Tuple of {tupleTypes.Length} elements"
                 else
-                    data.GetType().Name
+                    dataType.Name
             else
-                data.GetType().Name
+                dataType.Name
 
     let decode_int (Dynamic(data) as dyn) : Result<int64, DecodeErrors> =
         let data = unwrap dyn
@@ -459,7 +461,8 @@ module Dynamic =
         match classify dyn with
         | "List" ->
             match data with
-            | :? System.Collections.IEnumerable as data -> data |> Seq.cast<obj> |> Seq.map Dynamic |> Seq.toList |> Ok
+            | :? System.Collections.IEnumerable as data ->
+                data |> Seq.cast<obj> |> Seq.map gleam.Dynamic.From |> Seq.toList |> Ok
             | _ ->
                 Error
                     [ { expected = "List"
@@ -471,18 +474,31 @@ module Dynamic =
                     found = found
                     path = [] } ]
 
-    let decode_result (Dynamic(data) as dyn) : Result<Result<'a, 'b>, DecodeErrors> =
+    let decode_result (Dynamic(data) as dyn) : Result<Result<Dynamic, Dynamic>, DecodeErrors> =
         let data = unwrap dyn
 
         match classify dyn with
         | "Result" ->
-            match data with
-            | :? Result<'a, 'b> as data -> Ok(data)
-            | _ ->
+
+            let resultType = data.GetType()
+
+            if not (FSharp.Reflection.FSharpType.IsUnion resultType) then
                 Error
                     [ { expected = "Result"
                         found = "Unknown"
                         path = [] } ]
+            else
+                let case, fields = FSharp.Reflection.FSharpValue.GetUnionFields(data, resultType)
+
+                match case.Name with
+                | "Ok" -> fields.[0] |> Dynamic.From |> Ok |> Ok
+                | "Error" -> fields.[0] |> Dynamic.From |> Error |> Ok
+                | _ ->
+                    Error
+                        [ { expected = "Result"
+                            found = "Unknown"
+                            path = [] } ]
+
         | found ->
             Error
                 [ { expected = "Result"
@@ -516,7 +532,7 @@ module Dynamic =
                 for kvp in data do
                     let key = kvpType.GetProperty("Key").GetValue(kvp)
                     let value = kvpType.GetProperty("Value").GetValue(kvp)
-                    yield (from key, from value)
+                    yield (gleam.Dynamic.From key, gleam.Dynamic.From value)
             }
             |> Map.ofSeq
             |> Ok
@@ -530,7 +546,7 @@ module Dynamic =
     let decode_field (Dynamic(data) as dyn) (name: obj) : Result<Option<Dynamic>, DecodeErrors> =
         let map = decode_map dyn
 
-        map |> Result.map (Map.tryFind (from name))
+        map |> Result.map (Map.tryFind (gleam.Dynamic.From name))
 
     let private decode_tuple_impl
         (expectedLength: int option)
@@ -546,15 +562,32 @@ module Dynamic =
             | None -> "Tuple"
 
         if classification.StartsWith("Tuple") then
-            let tupleType = data.GetType()
+            match classification with
+            | "Tuple of 0 elements" -> Ok(UnknownTuple([]))
+            | "Tuple of 1 elements" ->
+                let tupleType = data.GetType()
+                let value = tupleType.GetProperty("Item1").GetValue(data)
+                Ok(UnknownTuple([ gleam.Dynamic.From value ]))
+            | _ ->
 
-            let values =
-                FSharp.Reflection.FSharpType.GetTupleElements tupleType
-                |> Array.mapi (fun i _ -> tupleType.GetProperty("Item" + string (i + 1)).GetValue(data))
-                |> Array.map from
-                |> Array.toList
+                let tupleType = data.GetType()
 
-            Ok(UnknownTuple(values))
+                // F# only generates Itemx properties up to 7. Past that there's a nested tuple
+                // under the Rest property.
+                let rec getTupleElement (tuple: obj) (index: int) =
+                    if index < 7 then
+                        tuple.GetType().GetProperty("Item" + string (index + 1)).GetValue(tuple)
+                    else
+                        let restTuple = tuple.GetType().GetProperty("Rest").GetValue(tuple)
+                        getTupleElement restTuple (index - 7)
+
+                let values =
+                    FSharp.Reflection.FSharpType.GetTupleElements tupleType
+                    |> Array.mapi (fun i _ -> getTupleElement data i)
+                    |> Array.map gleam.Dynamic.From
+                    |> Array.toList
+
+                Ok(UnknownTuple(values))
         else if classification = "List" then
             let list = decode_list dyn
 
