@@ -172,9 +172,11 @@ module Int =
 
     let bitwise_exclusive_or (x: int64) (y: int64) = x ^^^ y
 
-    let bitwise_shift_left (x: int64) (y: int64) = x <<< int y
+    let bitwise_shift_left (x: int64) (y: int64) =
+        if y >= 0 then x <<< int y else x >>> int -y
 
-    let bitwise_shift_right (x: int64) (y: int64) = x >>> int y
+    let bitwise_shift_right (x: int64) (y: int64) =
+        if y >= 0 then x >>> int y else x <<< int -y
 
 
 module StringBuilder =
@@ -777,25 +779,40 @@ module List =
     let each (list: list<'a>) (f: 'a -> 'b) : unit = List.iter (f >> ignore) list
 
 module Should =
-    let equal (a: obj) (b: obj) =
-        if isNull a && isNull b then
-            ()
-        elif isNull a || isNull b then
-            failwithf "Expected %A to equal %A" a b
-        elif a.Equals(b) then
-            ()
-        else
-            failwithf "Expected %A to equal %A" a b
+    open System.Collections
+
+    let equal (a: 'a) (b: 'a) =
+        let inline assertThat condition =
+            if condition then
+                ()
+            else
+                failwithf "Expected %A to equal %A" a b
+
+        match box a, box b with
+        | null, null -> ()
+        | null, _
+        | _, null -> failwithf "Expected %A to equal %A" a b
+        | :? IEquatable<'a> as a', (:? IEquatable<'a> as b') -> assertThat (a'.Equals(b'))
+        | :? IStructuralEquatable as a', (:? IStructuralEquatable as b') ->
+            assertThat (a'.Equals(b', StructuralComparisons.StructuralEqualityComparer))
+        | a, b -> assertThat (a.Equals(b))
 
     let not_equal (a: obj) (b: obj) =
-        if isNull a && isNull b then
-            failwithf "Expected %A to not equal %A" a b
-        elif isNull a || isNull b then
-            ()
-        elif not (a.Equals(b)) then
-            ()
-        else
-            failwithf "Expected %A to not equal %A" a b
+        let inline failIf condition =
+            if condition then
+                ()
+            else
+                failwithf "Expected %A to not equal %A" a b
+
+        match box a, box b with
+        | null, null -> ()
+        | null, _
+        | _, null -> failwithf "Expected %A to not equal %A" a b
+        | :? IEquatable<'a> as a', (:? IEquatable<'a> as b') -> failIf (a'.Equals(b'))
+        | :? IStructuralEquatable as a', (:? IStructuralEquatable as b') ->
+            failIf (a'.Equals(b', StructuralComparisons.StructuralEqualityComparer))
+        | a, b -> failIf (a.Equals(b))
+
 
     let be_ok (a: Result<'a, 'b>) =
         match a with
