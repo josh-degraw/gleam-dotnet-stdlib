@@ -387,6 +387,7 @@ module StringBuilder =
         builder
 
 module String =
+    open System.Globalization
 
     let ofChars (chars: char list) = new string (List.toArray chars)
 
@@ -429,32 +430,34 @@ module String =
     let trim_right (s: string) = s.TrimEnd()
 
     let pop_grapheme (s: string) =
-        let index = s.IndexOf(s[0])
+        match s |> Seq.toList with
+        | h :: tail -> Ok(h |> string, tail |> ofChars)
+        | [] -> Error()
 
-        if index = -1 then
-            Error()
-        else
-            Ok(s[0] |> string, s.Substring(1))
+    let to_graphemes (s: string) = [
+        let enumerator: TextElementEnumerator = StringInfo.GetTextElementEnumerator(s)
 
-    let to_graphemes (s: string) =
-        s.ToCharArray() |> Array.map string |> Array.toList
+        while enumerator.MoveNext() do
+            yield string enumerator.Current
+    ]
 
     let unsafe_int_to_utf_codepoint (a: int64) = UtfCodepoint(a)
 
-    let to_utf_codepoints (s: string) =
-        s.ToCharArray()
-        |> Array.map (fun c -> int64 c)
-        |> Array.map UtfCodepoint
-        |> Array.toList
+    let to_utf_codepoints (s: string) : UtfCodepoint list = [
+        for r in s.EnumerateRunes() do
+            r.Value |> int64 |> UtfCodepoint
+    ]
 
-    let from_utf_codepoints (codepoints: UtfCodepoint list) =
-        codepoints |> List.map (fun (UtfCodepoint c) -> char (c)) |> ofChars
+    let from_utf_codepoints (codepoints: UtfCodepoint list) : string =
+        let sb = StringBuilder()
 
-    let utf_codepoint_to_int (UtfCodepoint(value)) = value
+        for (UtfCodepoint c) in codepoints do
+            let a = Text.Rune.op_Explicit (int c)
+            sb.Append(a) |> ignore
 
-    let inspect (term: obj) =
-        // TODO: This may not be safe for AOT
-        sprintf "%A" term
+        sb.ToString()
+
+    let utf_codepoint_to_int (UtfCodepoint(value)) : int64 = value
 
     let byte_size (s: string) = s.Length
 
@@ -560,10 +563,13 @@ module Dynamic =
         match classify dyn with
         | "Int" -> Ok(Convert.ToInt64 data)
         | found ->
-            Error
-                [ { expected = "Int"
+            Error [
+                {
+                    expected = "Int"
                     found = found
-                    path = [] } ]
+                    path = []
+                }
+            ]
 
 
     let decode_float (Dynamic(data) as dyn) : Result<float, DecodeErrors> =
@@ -572,10 +578,13 @@ module Dynamic =
         match classify dyn with
         | "Float" -> Ok(Convert.ToDouble data)
         | found ->
-            Error
-                [ { expected = "Float"
+            Error [
+                {
+                    expected = "Float"
                     found = found
-                    path = [] } ]
+                    path = []
+                }
+            ]
 
     let decode_bool (Dynamic(data) as dyn) : Result<bool, DecodeErrors> =
         let data = unwrap dyn
@@ -583,10 +592,13 @@ module Dynamic =
         match classify dyn with
         | "Bool" -> Ok(Convert.ToBoolean data)
         | found ->
-            Error
-                [ { expected = "Bool"
+            Error [
+                {
+                    expected = "Bool"
                     found = found
-                    path = [] } ]
+                    path = []
+                }
+            ]
 
     let decode_string (Dynamic(data) as dyn) : Result<string, DecodeErrors> =
         let data = unwrap dyn
@@ -594,10 +606,13 @@ module Dynamic =
         match classify dyn with
         | "String" -> Ok(Convert.ToString data)
         | found ->
-            Error
-                [ { expected = "String"
+            Error [
+                {
+                    expected = "String"
                     found = found
-                    path = [] } ]
+                    path = []
+                }
+            ]
 
     let decode_list (Dynamic(data) as dyn) : Result<list<Dynamic>, DecodeErrors> =
         let data = unwrap dyn
@@ -608,15 +623,21 @@ module Dynamic =
             | :? System.Collections.IEnumerable as data ->
                 data |> Seq.cast<obj> |> Seq.map gleam.Dynamic.From |> Seq.toList |> Ok
             | _ ->
-                Error
-                    [ { expected = "List"
+                Error [
+                    {
+                        expected = "List"
                         found = "Unknown"
-                        path = [] } ]
+                        path = []
+                    }
+                ]
         | found ->
-            Error
-                [ { expected = "List"
+            Error [
+                {
+                    expected = "List"
                     found = found
-                    path = [] } ]
+                    path = []
+                }
+            ]
 
     let decode_result (Dynamic(data) as dyn) : Result<Result<Dynamic, Dynamic>, DecodeErrors> =
         let data = unwrap dyn
@@ -627,10 +648,13 @@ module Dynamic =
             let resultType = data.GetType()
 
             if not (FSharp.Reflection.FSharpType.IsUnion resultType) then
-                Error
-                    [ { expected = "Result"
+                Error [
+                    {
+                        expected = "Result"
                         found = "Unknown"
-                        path = [] } ]
+                        path = []
+                    }
+                ]
             else
                 let case, fields = FSharp.Reflection.FSharpValue.GetUnionFields(data, resultType)
 
@@ -638,16 +662,22 @@ module Dynamic =
                 | "Ok" -> fields.[0] |> Dynamic.From |> Ok |> Ok
                 | "Error" -> fields.[0] |> Dynamic.From |> Error |> Ok
                 | _ ->
-                    Error
-                        [ { expected = "Result"
+                    Error [
+                        {
+                            expected = "Result"
                             found = "Unknown"
-                            path = [] } ]
+                            path = []
+                        }
+                    ]
 
         | found ->
-            Error
-                [ { expected = "Result"
+            Error [
+                {
+                    expected = "Result"
                     found = found
-                    path = [] } ]
+                    path = []
+                }
+            ]
 
     type Decoder<'t> = Dynamic -> Result<'t, DecodeErrors>
 
@@ -682,10 +712,13 @@ module Dynamic =
             |> Ok
 
         | found ->
-            Error
-                [ { expected = "Dict"
+            Error [
+                {
+                    expected = "Dict"
                     found = found
-                    path = [] } ]
+                    path = []
+                }
+            ]
 
     let decode_field (Dynamic(data) as dyn) (name: obj) : Result<Option<Dynamic>, DecodeErrors> =
         let map = decode_map dyn
@@ -738,15 +771,17 @@ module Dynamic =
             match list, expectedLength with
             | Ok(values), Some(expectedLength) when List.length values = expectedLength -> Ok(UnknownTuple(values))
             | _ ->
-                Error
-                    { expected = expected
-                      found = classification
-                      path = [] }
+                Error {
+                    expected = expected
+                    found = classification
+                    path = []
+                }
         else
-            Error
-                { expected = expected
-                  found = classification
-                  path = [] }
+            Error {
+                expected = expected
+                found = classification
+                path = []
+            }
 
     let decode_tuple (dyn) : Result<UnknownTuple, DecodeErrors> =
         decode_tuple_impl None dyn |> Result.mapError List.singleton
@@ -755,40 +790,52 @@ module Dynamic =
         match decode_tuple_impl (Some 2) dyn with
         | Ok(UnknownTuple([ a; b ])) -> Ok(a, b)
         | Ok(UnknownTuple(values)) ->
-            Error
-                [ { expected = "Tuple of 2 elements"
+            Error [
+                {
+                    expected = "Tuple of 2 elements"
                     found = $"Tuple of {values.Length} elements"
-                    path = [] } ]
+                    path = []
+                }
+            ]
         | Error(error) -> Error[error]
 
     let decode_tuple3 (dyn) : Result<(Dynamic * Dynamic * Dynamic), DecodeErrors> =
         match decode_tuple_impl (Some 3) dyn with
         | Ok(UnknownTuple([ a; b; c ])) -> Ok(a, b, c)
         | Ok(UnknownTuple(values)) ->
-            Error
-                [ { expected = "Tuple of 3 elements"
+            Error [
+                {
+                    expected = "Tuple of 3 elements"
                     found = $"Tuple of {values.Length} elements"
-                    path = [] } ]
+                    path = []
+                }
+            ]
         | Error(error) -> Error[error]
 
     let decode_tuple4 (dyn: Dynamic) : Result<(Dynamic * Dynamic * Dynamic * Dynamic), DecodeErrors> =
         match decode_tuple_impl (Some 4) dyn with
         | Ok(UnknownTuple([ a; b; c; d ])) -> Ok(a, b, c, d)
         | Ok(UnknownTuple(values)) ->
-            Error
-                [ { expected = "Tuple of 4 elements"
+            Error [
+                {
+                    expected = "Tuple of 4 elements"
                     found = $"Tuple of {values.Length} elements"
-                    path = [] } ]
+                    path = []
+                }
+            ]
         | Error(error) -> Error[error]
 
     let decode_tuple5 (dyn: Dynamic) : Result<(Dynamic * Dynamic * Dynamic * Dynamic * Dynamic), DecodeErrors> =
         match decode_tuple_impl (Some 5) dyn with
         | Ok(UnknownTuple([ a; b; c; d; e ])) -> Ok(a, b, c, d, e)
         | Ok(UnknownTuple(values)) ->
-            Error
-                [ { expected = "Tuple of 5 elements"
+            Error [
+                {
+                    expected = "Tuple of 5 elements"
                     found = $"Tuple of {values.Length} elements"
-                    path = [] } ]
+                    path = []
+                }
+            ]
         | Error(error) -> Error[error]
 
     let decode_tuple6
@@ -797,20 +844,26 @@ module Dynamic =
         match decode_tuple_impl (Some 6) dyn with
         | Ok(UnknownTuple([ a; b; c; d; e; f ])) -> Ok(a, b, c, d, e, f)
         | Ok(UnknownTuple(values)) ->
-            Error
-                [ { expected = "Tuple of 6 elements"
+            Error [
+                {
+                    expected = "Tuple of 6 elements"
                     found = $"Tuple of {values.Length} elements"
-                    path = [] } ]
+                    path = []
+                }
+            ]
         | Error(error) -> Error[error]
 
     let tuple_get (UnknownTuple(values) as tuple) (index: int64) : Result<Dynamic, DecodeErrors> =
         match List.tryItem (int index) values with
         | Some(value) -> Ok(value)
         | None ->
-            Error
-                [ { expected = "Tuple"
+            Error [
+                {
+                    expected = "Tuple"
                     found = "Unknown"
-                    path = [ string index ] } ]
+                    path = [ string index ]
+                }
+            ]
 
     let tuple_size (UnknownTuple(values)) = List.length values |> int64
 
@@ -856,14 +909,15 @@ module Regex =
 
         matches
         |> Seq.cast<System.Text.RegularExpressions.Match>
-        |> Seq.map (fun m ->
-            { content = m.Value
-              submatches =
+        |> Seq.map (fun m -> {
+            content = m.Value
+            submatches =
                 m.Groups
                 |> Seq.cast<System.Text.RegularExpressions.Group>
                 |> Seq.skip 1 // Skip the first match, which is the whole match
                 |> Seq.map (fun g -> if g.Success then Some(g.Value) else None)
-                |> Seq.toList })
+                |> Seq.toList
+        })
         |> Seq.toList
 
     let replace (regex: Regex) (content: string) (substitute: string) : string = regex.Replace(content, substitute)
@@ -884,14 +938,15 @@ module Uri =
         try
             let uri = new NativeUri(uri_string)
 
-            Ok
-                { scheme = uri.Scheme |> Util.option_of_string
-                  userinfo = uri.UserInfo |> Util.option_of_string
-                  host = uri.Host |> Util.option_of_string
-                  port = uri.Port |> int64 |> Some
-                  path = uri.AbsolutePath
-                  query = uri.Query |> Util.option_of_string
-                  fragment = uri.Fragment |> Util.option_of_string }
+            Ok {
+                scheme = uri.Scheme |> Util.option_of_string
+                userinfo = uri.UserInfo |> Util.option_of_string
+                host = uri.Host |> Util.option_of_string
+                port = uri.Port |> int64 |> Some
+                path = uri.AbsolutePath
+                query = uri.Query |> Util.option_of_string
+                fragment = uri.Fragment |> Util.option_of_string
+            }
         with ex ->
             Error()
 

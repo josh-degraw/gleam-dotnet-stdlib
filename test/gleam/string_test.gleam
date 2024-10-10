@@ -1086,6 +1086,11 @@ pub fn inspect_test() {
   string.inspect(InspectTypeOne(#([1], "a")))
   |> should.equal("InspectTypeOne(#([1], \"a\"))")
 
+  string.inspect(InspectTypeOne(InspectTypeZero))
+  |> should.equal("InspectTypeOne(InspectTypeZero)")
+}
+
+pub fn inspect_fn_test() {
   string.inspect(Ok)
   |> should.equal("//fn(a) { ... }")
 
@@ -1109,9 +1114,6 @@ pub fn inspect_test() {
 
   string.inspect(#(InspectTypeOne, InspectTypeTwo))
   |> should.equal("#(//fn(a) { ... }, //fn(a, b) { ... })")
-
-  string.inspect(InspectTypeOne(InspectTypeZero))
-  |> should.equal("InspectTypeOne(InspectTypeZero)")
 
   string.inspect(<<255, 2, 0>>)
   |> should.equal("<<255, 2, 0>>")
