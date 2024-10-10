@@ -239,9 +239,151 @@ module StringBuilder =
     let is_empty (a: StringBuilder) = a.Length = 0
 
     let inspect (term: obj) : StringBuilder =
+
         let builder = StringBuilder()
-        // TODO: This may not be safe for AOT
-        Printf.bprintf builder "%A" term
+
+        let rec inspect_term (term: obj) =
+
+            if isNull term || term = () then
+                builder.Append("Nil") |> ignore
+            elif term :? int64 || term :? float then
+                builder.Append(term.ToString()) |> ignore
+            elif term :? bool then
+                let b = term :?> bool
+
+                if b then
+                    builder.Append("True") |> ignore
+                else
+                    builder.Append("False") |> ignore
+            elif term :? string then
+                builder.Append("\"") |> ignore
+
+                let innerBuilder = StringBuilder(term.ToString())
+
+                let escaped =
+                    innerBuilder
+                        .Replace("\\", "\\\\")
+                        .Replace("\r", "\\r")
+                        .Replace("\n", "\\n")
+                        .Replace("\t", "\\t")
+                        .Replace("\f", "\\f")
+                        .Replace("\"", "\\\"")
+                        .ToString()
+                        .ToCharArray()
+
+                for c in escaped do
+                    if Char.IsControl(c) then
+                        Printf.bprintf builder "\\u{%04X}" (int c)
+                    else
+                        builder.Append(c) |> ignore
+
+
+                // builder.Append(escaped) |> ignore
+                builder.Append("\"") |> ignore
+
+            elif term :? EmptyTuple then
+                builder.Append("#()") |> ignore
+
+            elif FSharp.Reflection.FSharpType.IsTuple(term.GetType()) then
+                let values = FSharp.Reflection.FSharpValue.GetTupleFields(term)
+                builder.Append("#(") |> ignore
+
+                let e = values.GetEnumerator()
+
+                let rec loop () =
+                    let value = e.Current
+                    inspect_term value
+
+                    if e.MoveNext() then
+                        builder.Append(", ") |> ignore
+                        loop ()
+
+                if e.MoveNext() then
+                    loop ()
+
+                builder.Append(")") |> ignore
+
+            elif
+                term.GetType().IsGenericType
+                && term.GetType().GetGenericTypeDefinition() = typedefof<list<_>>
+                && term :? System.Collections.IEnumerable
+            then
+                builder.Append("[") |> ignore
+                let values = term :?> System.Collections.IEnumerable
+
+                let e = values.GetEnumerator()
+
+                let rec loop () =
+                    let value = e.Current
+                    inspect_term value
+
+                    if e.MoveNext() then
+                        builder.Append(", ") |> ignore
+                        loop ()
+
+                if e.MoveNext() then
+                    loop ()
+
+                builder.Append("]") |> ignore
+            elif
+                FSharp.Reflection.FSharpType.IsUnion(
+                    term.GetType(),
+                    Reflection.BindingFlags.Public ||| Reflection.BindingFlags.NonPublic
+                )
+            then
+                let case, fields =
+                    FSharp.Reflection.FSharpValue.GetUnionFields(
+                        term,
+                        term.GetType(),
+                        Reflection.BindingFlags.Public ||| Reflection.BindingFlags.NonPublic
+                    )
+
+                builder.Append(case.Name) |> ignore
+
+                let e = fields.GetEnumerator()
+
+                let rec loop () =
+                    let value = e.Current
+                    inspect_term value
+
+                    if e.MoveNext() then
+                        builder.Append(", ") |> ignore
+                        loop ()
+
+                if e.MoveNext() then
+                    builder.Append("(") |> ignore
+                    loop ()
+                    builder.Append(")") |> ignore
+            elif FSharp.Reflection.FSharpType.IsFunction(term.GetType()) then
+
+                let rec getParams acc fn =
+                    if not (FSharp.Reflection.FSharpType.IsFunction(fn.GetType())) then
+                        acc
+                    else
+                        let domain, range = FSharp.Reflection.FSharpType.GetFunctionElements(fn.GetType())
+                        getParams (domain :: acc) range
+
+                let parameters = getParams [] (term.GetType())
+
+                let possible_names = [| 'a' .. 'z' |]
+
+                if parameters.Length = 1 && parameters.[0] = typeof<unit> then
+                    builder.Append("//fn() { ... }") |> ignore
+                else
+                    builder.Append("//fn(") |> ignore
+
+                    for i in 0 .. parameters.Length - 1 do
+
+                        let ch = possible_names.[i % 26]
+                        builder.Append(ch) |> ignore
+
+                    builder.Append(") { ... }") |> ignore
+
+            else
+                // TODO: This may not be safe for AOT
+                Printf.bprintf builder "%A" term
+
+        inspect_term term
         builder
 
 module String =
@@ -781,7 +923,7 @@ module List =
 module Should =
     open System.Collections
 
-    let equal (a: 'a) (b: 'a) =
+    let rec equal (a: 'a) (b: 'a) =
         let inline assertThat condition =
             if condition then
                 ()
@@ -792,12 +934,30 @@ module Should =
         | null, null -> ()
         | null, _
         | _, null -> failwithf "Expected %A to equal %A" a b
+        | :? string as a', (:? string as b') ->
+            if a' = b' then
+                ()
+            else
+                failwithf "Expected `%s` to equal `%s`" a' b'
+        | :? IEnumerable as a', (:? IEnumerable as b') ->
+            let a' = a'.GetEnumerator()
+            let b' = b'.GetEnumerator()
+
+            let rec loop () =
+                let aHasNext = a'.MoveNext()
+                let bHasNext = b'.MoveNext()
+
+                if aHasNext && bHasNext then
+                    assertThat (a'.Current.Equals(b'.Current))
+                    loop ()
+
+            loop ()
         | :? IEquatable<'a> as a', (:? IEquatable<'a> as b') -> assertThat (a'.Equals(b'))
         | :? IStructuralEquatable as a', (:? IStructuralEquatable as b') ->
             assertThat (a'.Equals(b', StructuralComparisons.StructuralEqualityComparer))
         | a, b -> assertThat (a.Equals(b))
 
-    let not_equal (a: obj) (b: obj) =
+    let not_equal (a: 'a) (b: 'a) =
         let inline failIf condition =
             if condition then
                 ()
@@ -808,6 +968,21 @@ module Should =
         | null, null -> ()
         | null, _
         | _, null -> failwithf "Expected %A to not equal %A" a b
+        | :? IEnumerable as a', (:? IEnumerable as b') ->
+            let a' = a'.GetEnumerator()
+            let b' = b'.GetEnumerator()
+
+            let rec loop () =
+                let aHasNext = a'.MoveNext()
+                let bHasNext = b'.MoveNext()
+
+                if aHasNext && bHasNext then
+                    failIf (a'.Current.Equals(b'.Current))
+                    loop ()
+
+            loop ()
+            // If we made it past the loop, the lists are equal and we should fail
+            failwithf "Expected %A to not equal %A" a b
         | :? IEquatable<'a> as a', (:? IEquatable<'a> as b') -> failIf (a'.Equals(b'))
         | :? IStructuralEquatable as a', (:? IStructuralEquatable as b') ->
             failIf (a'.Equals(b', StructuralComparisons.StructuralEqualityComparer))
