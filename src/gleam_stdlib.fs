@@ -441,23 +441,23 @@ module String =
             yield string enumerator.Current
     ]
 
-    let unsafe_int_to_utf_codepoint (a: int64) = UtfCodepoint(a)
+    let unsafe_int_to_utf_codepoint (c: int64) =
+        UtfCodepoint(Text.Rune.op_Explicit (int c))
 
     let to_utf_codepoints (s: string) : UtfCodepoint list = [
         for r in s.EnumerateRunes() do
-            r.Value |> int64 |> UtfCodepoint
+            UtfCodepoint r
     ]
 
     let from_utf_codepoints (codepoints: UtfCodepoint list) : string =
         let sb = StringBuilder()
 
         for (UtfCodepoint c) in codepoints do
-            let a = Text.Rune.op_Explicit (int c)
-            sb.Append(a) |> ignore
+            sb.Append(c) |> ignore
 
         sb.ToString()
 
-    let utf_codepoint_to_int (UtfCodepoint(value)) : int64 = value
+    let utf_codepoint_to_int (UtfCodepoint(rune)) : int64 = rune.Value |> int64
 
     let byte_size (s: string) = s.Length
 
