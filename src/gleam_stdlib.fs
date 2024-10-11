@@ -399,14 +399,14 @@ module StringBuilder =
         inspect_term term
         builder
 
-module String =
+module rec String =
     open System.Text
     open System.Globalization
 
     let ofChars (chars: char list) = new string (List.toArray chars)
 
     let length (s: string) =
-        s.EnumerateRunes() |> Seq.length |> int64
+        s |> to_graphemes |> List.length |> int64
 
     let lowercase (s: string) = s.ToLower()
 
@@ -414,11 +414,30 @@ module String =
 
     let less_than (a: string) (b: string) = a < b
 
-    let slice (s: string) (start: int64) (length: int64) = s.Substring(int start, int length)
+    let slice (s: string) (start: int64) (length: int64) =
+
+        let graphemes = to_graphemes s |> List.toArray
+
+        let startIndex =
+            if start < 0 then
+                max 0 (graphemes.Length + int start)
+            else
+                start |> int
+
+        let endIndex = if length < 0 then 0 else (start + length - 1L) |> int
+
+        let d: string array = graphemes.[startIndex..endIndex]
+
+        let builder = StringBuilder()
+
+        for g in d do
+            builder.Append(g) |> ignore
+
+        builder.ToString()
 
     let crop (s: string) (before: string) =
         let index = s.IndexOf(before)
-        if index = -1 then s else s.Substring(index + before.Length)
+        if index = -1 then s else s.Substring(index)
 
     let contains (haystack: string) (needle: string) = haystack.Contains(needle)
 
@@ -465,7 +484,7 @@ module String =
         | [] -> Error()
 
     let to_graphemes (s: string) = [
-        let enumerator: TextElementEnumerator = StringInfo.GetTextElementEnumerator(s)
+        let enumerator = StringInfo.GetTextElementEnumerator(s)
 
         while enumerator.MoveNext() do
             yield string enumerator.Current
