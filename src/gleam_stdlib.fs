@@ -478,12 +478,12 @@ module rec String =
 
     let trim_right (s: string) = s.TrimEnd(trim_chars)
 
-    let pop_grapheme (s: string) =
-        match s |> Seq.toList with
-        | h :: tail -> Ok(h |> string, tail |> ofChars)
+    let pop_grapheme (s: string) : Result<string * string, unit> =
+        match to_graphemes s with
+        | h :: tail -> Ok(h |> string, (tail |> String.concat ""))
         | [] -> Error()
 
-    let to_graphemes (s: string) = [
+    let to_graphemes (s: string) : string list = [
         let enumerator = StringInfo.GetTextElementEnumerator(s)
 
         while enumerator.MoveNext() do
