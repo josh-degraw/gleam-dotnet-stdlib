@@ -1038,11 +1038,14 @@ module Should =
         | null, null -> ()
         | null, _
         | _, null -> failwithf "Expected %A to equal %A" a b
-        | :? string as a', (:? string as b') ->
-            if a' = b' then
-                ()
-            else
-                failwithf "Expected `%s` to equal `%s`" a' b'
+        | :? bool as a', (:? bool as b') -> assertThat (a' = b')
+        | :? float as a', (:? float as b') -> assertThat (a' = b')
+        | :? int as a', (:? int as b') -> assertThat (a' = b')
+        | :? int64 as a', (:? int64 as b') -> assertThat (a' = b')
+        | :? string as a', (:? string as b') -> assertThat (a' = b')
+        | :? IStructuralEquatable as a', (:? IStructuralEquatable as b') ->
+            assertThat (a'.Equals(b', StructuralComparisons.StructuralEqualityComparer))
+        | :? IEquatable<'a> as a', (:? IEquatable<'a> as b') -> assertThat (a'.Equals(b'))
         | :? IEnumerable as a', (:? IEnumerable as b') ->
             let a' = a'.GetEnumerator()
             let b' = b'.GetEnumerator()
@@ -1056,9 +1059,7 @@ module Should =
                     loop ()
 
             loop ()
-        | :? IEquatable<'a> as a', (:? IEquatable<'a> as b') -> assertThat (a'.Equals(b'))
-        | :? IStructuralEquatable as a', (:? IStructuralEquatable as b') ->
-            assertThat (a'.Equals(b', StructuralComparisons.StructuralEqualityComparer))
+
         | a, b -> assertThat (a.Equals(b))
 
     let not_equal (a: 'a) (b: 'a) =
@@ -1072,6 +1073,14 @@ module Should =
         | null, null -> ()
         | null, _
         | _, null -> failwithf "Expected %A to not equal %A" a b
+        | :? bool as a', (:? bool as b') -> failIf (a' = b')
+        | :? float as a', (:? float as b') -> failIf (a' = b')
+        | :? int as a', (:? int as b') -> failIf (a' = b')
+        | :? int64 as a', (:? int64 as b') -> failIf (a' = b')
+        | :? string as a', (:? string as b') -> failIf (a' = b')
+        | :? IEquatable<'a> as a', (:? IEquatable<'a> as b') -> failIf (a'.Equals(b'))
+        | :? IStructuralEquatable as a', (:? IStructuralEquatable as b') ->
+            failIf (a'.Equals(b', StructuralComparisons.StructuralEqualityComparer))
         | :? IEnumerable as a', (:? IEnumerable as b') ->
             let a' = a'.GetEnumerator()
             let b' = b'.GetEnumerator()
@@ -1087,9 +1096,7 @@ module Should =
             loop ()
             // If we made it past the loop, the lists are equal and we should fail
             failwithf "Expected %A to not equal %A" a b
-        | :? IEquatable<'a> as a', (:? IEquatable<'a> as b') -> failIf (a'.Equals(b'))
-        | :? IStructuralEquatable as a', (:? IStructuralEquatable as b') ->
-            failIf (a'.Equals(b', StructuralComparisons.StructuralEqualityComparer))
+
         | a, b -> failIf (a.Equals(b))
 
 
