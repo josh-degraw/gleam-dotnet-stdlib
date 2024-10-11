@@ -351,7 +351,6 @@ fn do_ends_with(a: String, b: String) -> Bool
 /// // -> ["home", "gleam", "desktop", ""]
 /// ```
 ///
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.String.split")
 pub fn split(x: String, on substring: String) -> List(String) {
   case substring {
     "" -> to_graphemes(x)

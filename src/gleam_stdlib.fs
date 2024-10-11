@@ -182,6 +182,8 @@ module Int =
 module StringBuilder =
 
     open System.Text
+    open System.Globalization
+    open System.Collections.Generic
 
 
     let init () = StringBuilder()
@@ -223,11 +225,21 @@ module StringBuilder =
 
         a
 
-    let reverse (a: StringBuilder) =
-        a.ToString().ToCharArray()
-        |> Array.rev
-        |> fun a -> new string (a)
-        |> StringBuilder
+    let reverse (input: StringBuilder) =
+        let builder = StringBuilder(input.Length)
+
+        let enumerator = StringInfo.GetTextElementEnumerator(input.ToString())
+
+        let stack = Stack<string>()
+
+        while enumerator.MoveNext() do
+            let next = enumerator.GetTextElement()
+            stack.Push(next)
+
+        while stack.Count > 0 do
+            builder.Append(stack.Pop()) |> ignore
+
+        builder
 
     let split (a: StringBuilder) (b: string) =
         a.ToString().Split(b) |> Array.map StringBuilder |> Array.toList
@@ -387,11 +399,13 @@ module StringBuilder =
         builder
 
 module String =
+    open System.Text
     open System.Globalization
 
     let ofChars (chars: char list) = new string (List.toArray chars)
 
-    let length (s: string) = s.Length |> int64
+    let length (s: string) =
+        s.EnumerateRunes() |> Seq.length |> int64
 
     let lowercase (s: string) = s.ToLower()
 
@@ -411,7 +425,9 @@ module String =
 
     let ends_with (string: string) (suffix: string) = string.EndsWith(suffix)
 
-    let split (x: string) (substring: string) = x.Split(substring) |> Array.toList
+    let split (x: string) (substring: string) =
+
+        x.Split(substring) |> Array.toList
 
     let split_once (x: string) (substring: string) =
         let index = x.IndexOf(substring)
@@ -423,11 +439,24 @@ module String =
 
     let join (strings: string list) (separator: string) = String.concat separator strings
 
-    let trim (s: string) = s.Trim()
+    let trim_chars = [|
+        ' '
+        '\n'
+        '\r'
+        '\u2028'
+        '\u2029'
+        '\u0009'
+        '\u000A'
+        '\u000B'
+        '\u000C'
+        '\u000D'
+    |]
 
-    let trim_left (s: string) = s.TrimStart()
+    let trim (s: string) = s.Trim(trim_chars)
 
-    let trim_right (s: string) = s.TrimEnd()
+    let trim_left (s: string) = s.TrimStart(trim_chars)
+
+    let trim_right (s: string) = s.TrimEnd(trim_chars)
 
     let pop_grapheme (s: string) =
         match s |> Seq.toList with
