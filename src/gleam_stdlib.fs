@@ -189,9 +189,9 @@ module StringBuilder =
     let init () = StringBuilder()
 
 
-    let append (a: StringBuilder) (b: StringBuilder) = a.Append(b)
+    let append (a: StringBuilder) (b: StringBuilder) : StringBuilder = a.Append(b)
 
-    let from_strings (strings: string list) =
+    let from_strings (strings: string list) : StringBuilder =
         let sb = StringBuilder()
 
         for s in strings do
@@ -199,7 +199,7 @@ module StringBuilder =
 
         sb
 
-    let concat (builders: StringBuilder list) =
+    let concat (builders: StringBuilder list) : StringBuilder =
         let sb = StringBuilder()
 
         for b in builders do
@@ -207,25 +207,25 @@ module StringBuilder =
 
         sb
 
-    let from_string (a: string) = StringBuilder(a)
+    let from_string (a: string) : StringBuilder = StringBuilder(a)
 
-    let to_string (a: StringBuilder) = a.ToString()
+    let to_string (a: StringBuilder) : string = a.ToString()
 
-    let byte_size (a: StringBuilder) = a.Length |> int64
+    let byte_size (a: StringBuilder) : int64 = a.Length |> int64
 
-    let lowercase (a: StringBuilder) =
-        for i in 0 .. a.Length do
+    let lowercase (a: StringBuilder) : StringBuilder =
+        for i in 0 .. a.Length - 1 do
             a[i] <- System.Char.ToLower(a[i])
 
         a
 
-    let uppercase (a: StringBuilder) =
-        for i in 0 .. a.Length do
+    let uppercase (a: StringBuilder) : StringBuilder =
+        for i in 0 .. a.Length - 1 do
             a[i] <- System.Char.ToUpper(a[i])
 
         a
 
-    let reverse (input: StringBuilder) =
+    let reverse (input: StringBuilder) : StringBuilder =
         let builder = StringBuilder(input.Length)
 
         let enumerator = StringInfo.GetTextElementEnumerator(input.ToString())
@@ -241,14 +241,15 @@ module StringBuilder =
 
         builder
 
-    let split (a: StringBuilder) (b: string) =
+    let split (a: StringBuilder) (b: string) : list<StringBuilder> =
         a.ToString().Split(b) |> Array.map StringBuilder |> Array.toList
 
-    let replace (builder: StringBuilder) (pattern: string) (substitute: string) = builder.Replace(pattern, substitute)
+    let replace (builder: StringBuilder) (pattern: string) (substitute: string) : StringBuilder =
+        builder.Replace(pattern, substitute)
 
-    let is_equal (a: StringBuilder) (b: StringBuilder) = a.ToString() = b.ToString()
+    let is_equal (a: StringBuilder) (b: StringBuilder) : bool = a.ToString() = b.ToString()
 
-    let is_empty (a: StringBuilder) = a.Length = 0
+    let is_empty (a: StringBuilder) : bool = a.Length = 0
 
     let inspect (term: obj) : StringBuilder =
 
