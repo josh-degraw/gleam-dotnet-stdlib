@@ -1051,13 +1051,17 @@ module Should =
     let inline assertThat fn (a': 'a) (b': 'a) =
         if fn a' b' |> not then
             match box a', box b' with
+            | :? StringBuilder as a', (:? StringBuilder as b') ->
+                failwithf "Expected %A (len: %i) to equal %A (len: %i)" (string a') a'.Length (string b') b'.Length
             | :? string as a', (:? string as b') ->
                 failwithf "Expected %A (len: %i) to equal %A (len: %i)" a' a'.Length b' b'.Length
-            | _ -> failwithf "Expected %A to equal %A" a' b'
+            | _ -> failwithf "Expected %A to equal %A (type: %s)" a' b' (a'.GetType().Name)
 
     let inline failIf fn (a': 'a) (b': 'a) =
         if fn a' b' then
             match box a', box b' with
+            | :? StringBuilder as a', (:? StringBuilder as b') ->
+                failwithf "Expected %A (len: %i) not to equal %A (len: %i)" (string a') a'.Length (string b') b'.Length
             | :? string as a', (:? string as b') ->
                 failwithf "Expected %A (len: %i) not to equal %A (len: %i)" a' a'.Length b' b'.Length
             | _ -> failwithf "Expected %A not to equal %A" a' b'
@@ -1069,7 +1073,7 @@ module Should =
         | _, null -> false
         | a', b' -> EqualityComparer.Default.Equals(a', b')
 
-    let rec performCheck assertionFn (a: obj) (b: obj) =
+    let rec performCheck (assertionFn: ('a -> 'a -> bool) -> obj -> obj -> unit) (a: obj) (b: obj) =
         match box a, box b with
         | null, null -> ()
         | null, _
@@ -1078,9 +1082,7 @@ module Should =
         | :? float as a', (:? float as b') -> assertionFn (=) a' b'
         | :? int as a', (:? int as b') -> assertionFn (=) a' b'
         | :? int64 as a', (:? int64 as b') -> assertionFn (=) a' b'
-        | :? StringBuilder as a', (:? StringBuilder as b') ->
-            printfn "StringBuilder"
-            assertionFn (=) (string a') (string b')
+        | :? StringBuilder as a', (:? StringBuilder as b') -> assertionFn (=) (string a') (string b')
         | :? string as a', (:? string as b') -> assertionFn (=) a' b'
         | UnionType(aCase, aFields), UnionType(bCase, bFields) ->
 
@@ -1090,7 +1092,7 @@ module Should =
                 let a' = aFields[i]
                 let b' = bFields[i]
 
-                assertionFn objectEquality a' b'
+                performCheck assertionFn a' b'
 
         | :? IStructuralEquatable as a', (:? IStructuralEquatable as b') ->
             assertionFn (fun _ _ -> a'.Equals(b', StructuralComparisons.StructuralEqualityComparer)) a' b'
@@ -1105,15 +1107,12 @@ module Should =
                 let bHasNext = b'.MoveNext()
 
                 if aHasNext && bHasNext then
-                    assertionFn objectEquality a'.Current b'.Current
+                    performCheck assertionFn a'.Current b'.Current
                     loop ()
 
             loop ()
 
-        | _, _ ->
-            printfn "Couldn't figure it out"
-
-            assertionFn objectEquality a b
+        | _, _ -> assertionFn objectEquality a b
 
     let equal (a: obj) (b: obj) = performCheck assertThat a b
 
