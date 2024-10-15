@@ -1027,25 +1027,65 @@ module List =
 module Should =
     open System.Collections
 
-    let rec equal (a: 'a) (b: 'a) =
-        let inline assertThat condition =
-            if condition then
-                ()
-            else
-                failwithf "Expected %A to equal %A" a b
+    open System.Reflection
+    open System.Collections.Generic
 
+    let bindingFlags = BindingFlags.Public ||| BindingFlags.NonPublic
+
+    let (|UnionType|_|) (value: obj) =
+        FSharp.Reflection.FSharpType.IsUnion(value.GetType(), bindingFlags)
+        |> function
+            | true -> Some(FSharp.Reflection.FSharpValue.GetUnionFields(value, value.GetType(), bindingFlags))
+            | false -> None
+
+    let inline assertThat fn (a': 'a) (b': 'a) =
+        if fn a' b' |> not then
+            match box a', box b' with
+            | :? string as a', (:? string as b') ->
+                failwithf "Expected %A (len: %i) to equal %A (len: %i)" a' a'.Length b' b'.Length
+            | _ -> failwithf "Expected %A to equal %A" a' b'
+
+    let inline failIf fn (a': 'a) (b': 'a) =
+        if fn a' b' then
+            match box a', box b' with
+            | :? string as a', (:? string as b') ->
+                failwithf "Expected %A (len: %i) not to equal %A (len: %i)" a' a'.Length b' b'.Length
+            | _ -> failwithf "Expected %A not to equal %A" a' b'
+
+    let objectEquality (a: obj) (b: obj) =
+        match a, b with
+        | null, null -> true
+        | null, _
+        | _, null -> false
+        | a', b' -> EqualityComparer.Default.Equals(a', b')
+
+    let rec performCheck assertionFn (a: obj) (b: obj) =
         match box a, box b with
         | null, null -> ()
         | null, _
-        | _, null -> failwithf "Expected %A to equal %A" a b
-        | :? bool as a', (:? bool as b') -> assertThat (a' = b')
-        | :? float as a', (:? float as b') -> assertThat (a' = b')
-        | :? int as a', (:? int as b') -> assertThat (a' = b')
-        | :? int64 as a', (:? int64 as b') -> assertThat (a' = b')
-        | :? string as a', (:? string as b') -> assertThat (a' = b')
+        | _, null -> assertionFn (fun _ _ -> false) a b
+        | :? bool as a', (:? bool as b') -> assertionFn (=) a' b'
+        | :? float as a', (:? float as b') -> assertionFn (=) a' b'
+        | :? int as a', (:? int as b') -> assertionFn (=) a' b'
+        | :? int64 as a', (:? int64 as b') -> assertionFn (=) a' b'
+        | :? StringBuilder as a', (:? StringBuilder as b') ->
+            printfn "StringBuilder"
+            assertionFn (=) (string a') (string b')
+        | :? string as a', (:? string as b') -> assertionFn (=) a' b'
+        | UnionType(aCase, aFields), UnionType(bCase, bFields) ->
+
+            assertionFn (=) aCase bCase
+
+            for i in 0 .. aFields.Length - 1 do
+                let a' = aFields[i]
+                let b' = bFields[i]
+
+                assertionFn objectEquality a' b'
+
         | :? IStructuralEquatable as a', (:? IStructuralEquatable as b') ->
-            assertThat (a'.Equals(b', StructuralComparisons.StructuralEqualityComparer))
-        | :? IEquatable<'a> as a', (:? IEquatable<'a> as b') -> assertThat (a'.Equals(b'))
+            assertionFn (fun _ _ -> a'.Equals(b', StructuralComparisons.StructuralEqualityComparer)) a' b'
+
+        //| :? IEquatable<'a> as a', (:? IEquatable<'a> as b') -> assertEquals a' b'
         | :? IEnumerable as a', (:? IEnumerable as b') ->
             let a' = a'.GetEnumerator()
             let b' = b'.GetEnumerator()
@@ -1055,50 +1095,19 @@ module Should =
                 let bHasNext = b'.MoveNext()
 
                 if aHasNext && bHasNext then
-                    assertThat (a'.Current.Equals(b'.Current))
+                    assertionFn objectEquality a'.Current b'.Current
                     loop ()
 
             loop ()
 
-        | a, b -> assertThat (a.Equals(b))
+        | _, _ ->
+            printfn "Couldn't figure it out"
 
-    let not_equal (a: 'a) (b: 'a) =
-        let inline failIf condition =
-            if condition then
-                ()
-            else
-                failwithf "Expected %A to not equal %A" a b
+            assertionFn objectEquality a b
 
-        match box a, box b with
-        | null, null -> ()
-        | null, _
-        | _, null -> failwithf "Expected %A to not equal %A" a b
-        | :? bool as a', (:? bool as b') -> failIf (a' = b')
-        | :? float as a', (:? float as b') -> failIf (a' = b')
-        | :? int as a', (:? int as b') -> failIf (a' = b')
-        | :? int64 as a', (:? int64 as b') -> failIf (a' = b')
-        | :? string as a', (:? string as b') -> failIf (a' = b')
-        | :? IEquatable<'a> as a', (:? IEquatable<'a> as b') -> failIf (a'.Equals(b'))
-        | :? IStructuralEquatable as a', (:? IStructuralEquatable as b') ->
-            failIf (a'.Equals(b', StructuralComparisons.StructuralEqualityComparer))
-        | :? IEnumerable as a', (:? IEnumerable as b') ->
-            let a' = a'.GetEnumerator()
-            let b' = b'.GetEnumerator()
+    let equal (a: obj) (b: obj) = performCheck assertThat a b
 
-            let rec loop () =
-                let aHasNext = a'.MoveNext()
-                let bHasNext = b'.MoveNext()
-
-                if aHasNext && bHasNext then
-                    failIf (a'.Current.Equals(b'.Current))
-                    loop ()
-
-            loop ()
-            // If we made it past the loop, the lists are equal and we should fail
-            failwithf "Expected %A to not equal %A" a b
-
-        | a, b -> failIf (a.Equals(b))
-
+    let not_equal (a: 'a) (b: 'a) = performCheck failIf a b
 
     let be_ok (a: Result<'a, 'b>) =
         match a with
