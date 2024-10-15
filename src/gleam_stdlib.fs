@@ -445,9 +445,7 @@ module rec String =
 
     let ends_with (string: string) (suffix: string) = string.EndsWith(suffix)
 
-    let split (x: string) (substring: string) =
-
-        x.Split(substring) |> Array.toList
+    let split (x: string) (substring: string) = x.Split(substring) |> Array.toList
 
     let split_once (x: string) (substring: string) =
         let index = x.IndexOf(substring)
@@ -934,9 +932,9 @@ module Regex =
     type RegexOptions = System.Text.RegularExpressions.RegexOptions
     type Regex = System.Text.RegularExpressions.Regex
 
-    let compile (pattern: string) (reg_options: gleam.RegexOptions) = // (case_insensitive: bool) (multi_line: bool) =
+    let compile (pattern: string) (reg_options: gleam.RegexOptions) =
 
-        let mutable options = RegexOptions.Compiled
+        let mutable options = RegexOptions.None // RegexOptions.Compiled
 
         if reg_options.case_insensitive then
             options <- options ||| RegexOptions.IgnoreCase
@@ -953,6 +951,13 @@ module Regex =
 
     let split (regex: Regex) (content: string) = regex.Split(content) |> Array.toList
 
+    /// Remove trailing `None`s
+    let rec private trimEnd total =
+        match total |> List.tryLast with
+        | Some(Some _)
+        | None -> total
+        | Some None -> trimEnd (total[0 .. total.Length - 2])
+
     let scan (regex: Regex) (content: string) : list<Match> =
         let matches = regex.Matches(content)
 
@@ -963,9 +968,14 @@ module Regex =
             submatches =
                 m.Groups
                 |> Seq.cast<System.Text.RegularExpressions.Group>
-                |> Seq.skip 1 // Skip the first match, which is the whole match
-                |> Seq.map (fun g -> if g.Success then Some(g.Value) else None)
+                |> Seq.skip 1 // Skip the first group, which is the whole match
+                |> Seq.map (fun g ->
+                    if g.Success then
+                        if g.Value = "" then None else Some(g.Value)
+                    else
+                        None)
                 |> Seq.toList
+                |> trimEnd
         })
         |> Seq.toList
 
