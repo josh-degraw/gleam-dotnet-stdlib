@@ -75,12 +75,34 @@ pub fn split_test() {
   |> should.equal(["foo", "32", "4", "9", "0"])
 }
 
+@target(javascript)
 pub fn matching_split_test() {
   let assert Ok(re) = regex.from_string("([+-])( *)(d)*")
 
   regex.split(re, "abc+ def+ghi+  abc")
   |> should.equal([
     "abc", "+", " ", "d", "ef", "+", "", "", "ghi", "+", "  ", "", "abc",
+  ])
+}
+
+@target(erlang)
+pub fn matching_split_test() {
+  let assert Ok(re) = regex.from_string("([+-])( *)(d)*")
+
+  regex.split(re, "abc+ def+ghi+  abc")
+  |> should.equal([
+    "abc", "+", " ", "d", "ef", "+", "", "", "ghi", "+", "  ", "", "abc",
+  ])
+}
+
+// F# doesn't generate empty groups where javascript matches return undefined
+@target(fsharp)
+pub fn matching_split_test() {
+  let assert Ok(re) = regex.from_string("([+-])( *)(d)*")
+
+  regex.split(re, "abc+ def+ghi+  abc")
+  |> should.equal([
+    "abc", "+", " ", "d", "ef", "+", "", "ghi", "+", "  ", "abc",
   ])
 }
 
