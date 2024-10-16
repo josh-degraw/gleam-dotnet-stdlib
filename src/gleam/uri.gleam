@@ -58,7 +58,8 @@ pub fn parse(uri_string: String) -> Result(Uri, Nil) {
 }
 
 @external(erlang, "gleam_stdlib", "uri_parse")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.Uri.parse")
+// TODO: Fix the native implementation to match Gleam's. .NET is more aggressive at failing on invalid URIs
+//@external(fsharp, "../gleam_stdlib.fs", "Gleam.Uri.parse")
 fn do_parse(uri_string: String) -> Result(Uri, Nil) {
   // From https://tools.ietf.org/html/rfc3986#appendix-B
   let pattern =

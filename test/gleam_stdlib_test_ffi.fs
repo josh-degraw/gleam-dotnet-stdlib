@@ -59,8 +59,6 @@ let main () : int =
 
     let all_test_types = Assembly.GetEntryAssembly().GetTypes()
 
-    printfn "all_test_types: %A" all_test_types
-
     let all_test_types =
         all_test_types |> Array.filter (fun t -> t.Name.EndsWith("_test"))
 

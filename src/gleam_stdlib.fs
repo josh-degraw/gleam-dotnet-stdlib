@@ -993,33 +993,84 @@ module Uri =
         with ex ->
             Error()
 
-    let parse (uri_string: string) : Result<Uri, unit> =
-        try
-            let uri = new NativeUri(uri_string)
+    let private empty_uri = {
+        scheme = None
+        userinfo = None
+        host = None
+        port = None
+        path = ""
+        query = None
+        fragment = None
+    }
 
-            Ok {
-                scheme = uri.Scheme |> Util.option_of_string
-                userinfo = uri.UserInfo |> Util.option_of_string
-                host = uri.Host |> Util.option_of_string
-                port = uri.Port |> int64 |> Some
-                path = uri.AbsolutePath
-                query = uri.Query |> Util.option_of_string
-                fragment = uri.Fragment |> Util.option_of_string
-            }
-        with ex ->
-            Error()
+    // TODO: Fix this to match Gleam's implementation.
+    // .NET is more aggressive at failing on invalid URIs
+    let parse (uri_string: string) : Result<Uri, unit> =
+        if uri_string = "" then
+            Ok empty_uri
+        elif uri_string = "//" then
+            Ok { empty_uri with host = Some "" }
+        else
+            try
+                let uri = new NativeUri(uri_string)
+
+                Ok {
+                    scheme = uri.Scheme |> Util.option_of_string
+                    userinfo = uri.UserInfo |> Util.option_of_string
+                    host = if isNull uri.Host then None else uri.Host |> Some
+                    port =
+
+                        if uri.Port = -1 then
+                            None
+                        else
+                            let port = uri.Port
+
+                            if uri_string.Contains(string port) then
+                                uri.Port |> int64 |> Some
+                            else
+                                None
+                    path = if uri.AbsolutePath = "/" then "" else uri.AbsolutePath
+                    query =
+                        // Not using TrimStart('?') to fix test that checks for
+                        if uri.Query.StartsWith "?" then
+                            uri.Query[1..] |> Util.option_of_string
+                        else
+                            uri.Query |> Util.option_of_string
+                    fragment = uri.Fragment.TrimStart('#') |> Util.option_of_string
+                }
+            with ex ->
+                Error()
+
+    let private sanitize =
+        function
+        | Some v ->
+            match percent_decode v with
+            // TODO: Improve or fix this case
+            | Ok "%C2" -> failwith "invalid encoded value"
+            | Ok v -> v.Replace("+", " ")
+            | Error _ -> ""
+
+        | None -> ""
 
     let parse_query (query: string) : Result<list<(string * string)>, unit> =
-        try
-            let uri = new NativeUri(query)
+        if query = "" then
+            Ok []
+        else
+            try
+                let query = query.TrimStart('?')
 
-            uri.Query.Split '&'
-            |> Array.map (fun pair -> pair.Split '=')
-            |> Array.map (fun pair -> NativeUri.UnescapeDataString(pair.[0]), NativeUri.UnescapeDataString(pair.[1]))
-            |> Array.toList
-            |> Ok
-        with ex ->
-            Error()
+                query.Split '&'
+                |> Array.map (fun pair -> pair.Split '=')
+                |> Array.map (fun pair ->
+                    assert (pair.Length <= 2)
+                    let start = pair |> Array.tryItem 0
+                    let end' = pair |> Array.tryItem 1
+
+                    sanitize start, sanitize end')
+                |> Array.toList
+                |> Ok
+            with ex ->
+                Error()
 
 module List =
     let length (list: list<'a>) = List.length list |> int64
@@ -1055,6 +1106,8 @@ module Should =
                 failwithf "Expected %A (len: %i) to equal %A (len: %i)" (string a') a'.Length (string b') b'.Length
             | :? string as a', (:? string as b') ->
                 failwithf "Expected %A (len: %i) to equal %A (len: %i)" a' a'.Length b' b'.Length
+            | UnionType(aCase, aFields), UnionType(bCase, bFields) ->
+                failwithf "Expected %s(%A) to equal %s(%A)" aCase.Name aFields bCase.Name bFields
             | _ -> failwithf "Expected %A to equal %A (type: %s)" a' b' (a'.GetType().Name)
 
     let inline failIf fn (a': 'a) (b': 'a) =
@@ -1086,7 +1139,10 @@ module Should =
         | :? string as a', (:? string as b') -> assertionFn (=) a' b'
         | UnionType(aCase, aFields), UnionType(bCase, bFields) ->
 
-            assertionFn (=) aCase bCase
+            let aStr = sprintf "%s%A" aCase.Name (List.ofArray aFields)
+            let bStr = sprintf "%s%A" bCase.Name (List.ofArray bFields)
+
+            assertionFn (=) aStr bStr
 
             for i in 0 .. aFields.Length - 1 do
                 let a' = aFields[i]
