@@ -256,7 +256,6 @@ module StringBuilder =
         let builder = StringBuilder()
 
         let rec inspect_term (term: obj) =
-
             if isNull term || term = () then
                 builder.Append("Nil") |> ignore
             elif term :? int64 || term :? float then
@@ -369,15 +368,24 @@ module StringBuilder =
                     builder.Append(")") |> ignore
             elif FSharp.Reflection.FSharpType.IsFunction(term.GetType()) then
 
-                let rec getParams acc fn =
-                    if not (FSharp.Reflection.FSharpType.IsFunction(fn.GetType())) then
-                        acc
+                let rec getParams acc fnType =
+                    if FSharp.Reflection.FSharpType.IsFunction(fnType) then
+                        let domain, range = FSharp.Reflection.FSharpType.GetFunctionElements(fnType)
+
+                        //if the fnType is the constructor for a union type which takes arguments, we need to extract them
+                        if FSharp.Reflection.FSharpType.IsTuple(domain) then
+                            let elements = FSharp.Reflection.FSharpType.GetTupleElements(domain) |> Array.toList
+                            getParams (elements @ acc) range
+                        else
+                            getParams (domain :: acc) range
+                    // elif FSharp.Reflection.FSharpType.IsTuple(fnType) then
+                    //     let elements = FSharp.Reflection.FSharpType.GetTupleElements(fnType) |> Array.toList
+                    //     printfn "elements: %A" elements
+                    //     getParams (elements @ acc) typeof<unit>
                     else
-                        let domain, range = FSharp.Reflection.FSharpType.GetFunctionElements(fn.GetType())
-                        getParams (domain :: acc) range
+                        acc
 
                 let parameters = getParams [] (term.GetType())
-
                 let possible_names = [| 'a' .. 'z' |]
 
                 if parameters.Length = 1 && parameters.[0] = typeof<unit> then
@@ -390,7 +398,42 @@ module StringBuilder =
                         let ch = possible_names.[i % 26]
                         builder.Append(ch) |> ignore
 
+                        if i + 1 < parameters.Length then
+                            builder.Append(", ") |> ignore
+
                     builder.Append(") { ... }") |> ignore
+            elif
+                term.GetType().IsGenericType
+                && term.GetType().GetGenericTypeDefinition() = typedefof<Map<_, _>>
+            then
+                builder.Append("dict.from_list([") |> ignore
+                let values = term :?> System.Collections.IEnumerable
+
+                let e = values.GetEnumerator()
+
+                let kvpType =
+                    typedefof<KeyValuePair<_, _>>
+                        .MakeGenericType(term.GetType().GetGenericArguments())
+
+                let rec loop () =
+                    let value = e.Current
+
+                    let kvpType =
+                        typedefof<KeyValuePair<_, _>>
+                            .MakeGenericType(term.GetType().GetGenericArguments())
+
+                    let key = kvpType.GetProperty("Key").GetValue(value)
+                    let value = kvpType.GetProperty("Value").GetValue(value)
+                    inspect_term (key, value)
+
+                    if e.MoveNext() then
+                        builder.Append(", ") |> ignore
+                        loop ()
+
+                if e.MoveNext() then
+                    loop ()
+
+                builder.Append("])") |> ignore
 
             else
                 // TODO: This may not be safe for AOT
