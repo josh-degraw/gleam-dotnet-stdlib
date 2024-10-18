@@ -250,5 +250,4 @@ pub fn compare(a: BitArray, with b: BitArray) -> order.Order {
 }
 
 @external(erlang, "gleam_stdlib", "bit_array_to_int_and_size")
-@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.to_int_and_size")
 fn bit_array_to_int_and_size(a: BitArray) -> #(Int, Int)

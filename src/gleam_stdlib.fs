@@ -2,6 +2,7 @@
 // where changing the file to an fsx file yields better type information
 #if INTERACTIVE
 #load "../../../compiler-core/src/fsharp/prelude.fs"
+#load "../../../compiler-core/src/fsharp/prelude.fsx"
 #endif
 namespace Gleam
 
@@ -435,6 +436,9 @@ module StringBuilder =
 
                 builder.Append("])") |> ignore
 
+            else if term :? BitArray then
+                let ba = term :?> BitArray
+                builder.Append(ba.ToString()) |> ignore
             else
                 // TODO: This may not be safe for AOT
                 Printf.bprintf builder "%A" term
@@ -553,35 +557,26 @@ module rec String =
 
 module BitArray =
 
-    let from_string (s: string) : BitArray =
-        raise (NotImplementedException("BitArray.from_string not yet implemented"))
+    let from_string (s: string) : BitArray = BitArray.FromString(s)
 
-    let byte_size (arr: BitArray) : int64 =
-        raise (NotImplementedException("BitArray.byte_size not yet implemented"))
+    let byte_size (arr: BitArray) : int64 = arr.Length
 
-    let concat (bit_arrays: BitArray list) : BitArray =
-        raise (NotImplementedException("BitArray.concat not yet implemented"))
+    let concat (bit_arrays: BitArray list) : BitArray = BitArray.Concat(bit_arrays)
 
     let slice (arr: BitArray) (start: int64) (length: int64) : Result<BitArray, unit> =
-        raise (NotImplementedException("BitArray.slice not yet implemented"))
+        arr.BinaryFromSlice(start, start + length)
 
-    let is_utf8 (arr: BitArray) : bool =
-        raise (NotImplementedException("BitArray.is_utf8 not yet implemented"))
+    let is_utf8 (arr: BitArray) : bool = arr.IsUtf8()
 
-    let to_string (arr: BitArray) : Result<string, unit> =
-        raise (NotImplementedException("BitArray.to_string not yet implemented"))
+    let to_string (arr: BitArray) : Result<string, unit> = arr.TryToUtf8String()
 
-    let base64_encode (input: BitArray) (padding: bool) : string =
-        raise (NotImplementedException("BitArray.base64_encode not yet implemented"))
+    let base64_encode (input: BitArray) (padding: bool) : string = input.Base64Encode(padding)
 
-    let base64_decode (encoded: string) : Result<BitArray, unit> =
-        raise (NotImplementedException("BitArray.base64_decode not yet implemented"))
+    let base64_decode (encoded: string) : Result<BitArray, unit> = BitArray.Base64Decode(encoded)
 
-    let base16_encode (input: BitArray) : string =
-        raise (NotImplementedException("BitArray.base16_encode not yet implemented"))
+    let base16_encode (input: BitArray) : string = input.Base16Encode()
 
-    let base16_decode (input: string) : Result<BitArray, unit> =
-        raise (NotImplementedException("BitArray.base16_decode not yet implemented"))
+    let base16_decode (input: string) : Result<BitArray, unit> = BitArray.Base16Decode(input)
 
     let inspect (arr: BitArray) : string =
         raise (NotImplementedException("BitArray.inspect not yet implemented"))
@@ -589,12 +584,7 @@ module BitArray =
     let do_inspect (arr: BitArray) (accumulator: string) : string =
         raise (NotImplementedException("BitArray.do_inspect not yet implemented"))
 
-    let compare (a: BitArray) (b: BitArray) : Order =
-        raise (NotImplementedException("BitArray.compare not yet implemented"))
-
-    let to_int_and_size (arr: BitArray) : (int64 * int64) =
-        raise (NotImplementedException("BitArray.to_int_and_size not yet implemented"))
-
+    let compare (a: BitArray) (b: BitArray) : Order = a.Compare(b)
 
 module Dynamic =
     open System.Collections
