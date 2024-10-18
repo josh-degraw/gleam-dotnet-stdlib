@@ -379,10 +379,6 @@ module StringBuilder =
                             getParams (elements @ acc) range
                         else
                             getParams (domain :: acc) range
-                    // elif FSharp.Reflection.FSharpType.IsTuple(fnType) then
-                    //     let elements = FSharp.Reflection.FSharpType.GetTupleElements(fnType) |> Array.toList
-                    //     printfn "elements: %A" elements
-                    //     getParams (elements @ acc) typeof<unit>
                     else
                         acc
 
@@ -563,8 +559,7 @@ module BitArray =
 
     let concat (bit_arrays: BitArray list) : BitArray = BitArray.Concat(bit_arrays)
 
-    let slice (arr: BitArray) (start: int64) (length: int64) : Result<BitArray, unit> =
-        arr.BinaryFromSlice(start, start + length)
+    let slice (arr: BitArray) (start: int64) (length: int64) : Result<BitArray, unit> = arr.Slice(start, length)
 
     let is_utf8 (arr: BitArray) : bool = arr.IsUtf8()
 
@@ -578,8 +573,7 @@ module BitArray =
 
     let base16_decode (input: string) : Result<BitArray, unit> = BitArray.Base16Decode(input)
 
-    let inspect (arr: BitArray) : string =
-        raise (NotImplementedException("BitArray.inspect not yet implemented"))
+    let inspect (arr: BitArray) : string = arr.ToString()
 
     let do_inspect (arr: BitArray) (accumulator: string) : string =
         raise (NotImplementedException("BitArray.do_inspect not yet implemented"))
@@ -589,6 +583,8 @@ module BitArray =
 module Dynamic =
     open System.Collections
     open System.Collections.Generic
+
+    type BitArray = gleam.BitArray
 
     type DecodeErrors = gleam.DecodeErrors
     type Dynamic = gleam.Dynamic
@@ -600,9 +596,6 @@ module Dynamic =
 
     let inline from (a: obj) = gleam.Dynamic.From(a)
 
-    let decode_bit_array (Dynamic(data)) =
-        raise (NotImplementedException("Dynamic.bit_array not yet implemented"))
-
     let rec classify (Dynamic(data) as dyn) =
 
         match data with
@@ -612,6 +605,8 @@ module Dynamic =
         | :? float -> "Float"
         | :? bool -> "Bool"
         | :? Unit -> "Nil"
+
+        | :? BitArray -> "BitArray"
         | :? EmptyTuple -> "Tuple of 0 elements"
         | _ ->
 
@@ -636,6 +631,19 @@ module Dynamic =
                     dataType.Name
             else
                 dataType.Name
+
+    let decode_bit_array (Dynamic(data) as dyn) : Result<gleam.BitArray, DecodeErrors> =
+        match data with
+        | :? BitArray as ba -> Ok(ba)
+        | :? (byte[]) as ba -> Ok(gleam.BitArray.FromBytes(ba))
+        | _ ->
+            Error [
+                {
+                    expected = "BitArray"
+                    found = classify dyn
+                    path = []
+                }
+            ]
 
     let decode_int (Dynamic(data) as dyn) : Result<int64, DecodeErrors> =
         let data = unwrap dyn

@@ -170,9 +170,19 @@ pub fn base16_decode(input: String) -> Result(BitArray, Nil)
 /// // -> "<<100, 5:size(3)>>"
 /// ```
 ///
+@target(erlang)
 pub fn inspect(input: BitArray) -> String {
   do_inspect(input, "<<") <> ">>"
 }
+
+@target(javascript)
+pub fn inspect(input: BitArray) -> String {
+  do_inspect(input, "<<") <> ">>"
+}
+
+@target(fsharp)
+@external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.inspect")
+pub fn inspect(input: BitArray) -> String
 
 @external(javascript, "../gleam_stdlib.mjs", "bit_array_inspect")
 @external(fsharp, "../gleam_stdlib.fs", "Gleam.BitArray.do_inspect")
