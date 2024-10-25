@@ -507,7 +507,7 @@ fn do_digits(x: Int, base: Int, acc: List(Int)) -> List(Int) {
 ///
 /// ```gleam
 /// undigits([2,3,4], 1)
-/// // -> Error(InvalidBase)
+/// // -> Error(Nil)
 /// ```
 ///
 /// ```gleam

@@ -47,11 +47,16 @@ export function to_string(term) {
 }
 
 export function float_to_string(float) {
-  const string = float.toString();
+  const string = float.toString().replace('+', '');
   if (string.indexOf(".") >= 0) {
     return string;
   } else {
-    return string + ".0";
+    const index = string.indexOf("e");
+    if (index >= 0) {
+      return string.slice(0, index) + '.0' + string.slice(index);
+    } else {
+      return string + ".0";
+    }
   }
 }
 
@@ -156,9 +161,12 @@ export function graphemes(string) {
   }
 }
 
+let segmenter = undefined;
+
 function graphemes_iterator(string) {
   if (globalThis.Intl && Intl.Segmenter) {
-    return new Intl.Segmenter().segment(string)[Symbol.iterator]();
+    segmenter ||= new Intl.Segmenter();
+    return segmenter.segment(string)[Symbol.iterator]();
   }
 }
 
@@ -218,6 +226,34 @@ export function concat(xs) {
 
 export function length(data) {
   return data.length;
+}
+
+export function string_slice(string, idx, len) {
+  if (len <= 0 || idx >= string.length) {
+    return "";
+  }
+
+  const iterator = graphemes_iterator(string);
+  if (iterator) {
+    while (idx-- > 0) {
+      iterator.next();
+    }
+
+    let result = "";
+
+    while (len-- > 0) {
+      const v = iterator.next().value;
+      if (v === undefined) {
+        break;
+      }
+
+      result += v.segment;
+    }
+
+    return result;
+  } else {
+    return string.match(/./gsu).slice(idx, idx + len).join("");
+  }
 }
 
 export function crop_string(string, substring) {
@@ -506,9 +542,9 @@ export function parse_query(query) {
       const [key, value] = section.split("=");
       if (!key) continue;
 
-      const decodedKey = unsafe_percent_decode_query(key)
-      const decodedValue = unsafe_percent_decode_query(value)
-      pairs.push([decodedKey, decodedValue])
+      const decodedKey = unsafe_percent_decode_query(key);
+      const decodedValue = unsafe_percent_decode_query(value);
+      pairs.push([decodedKey, decodedValue]);
     }
     return new Ok(List.fromArray(pairs));
   } catch {
@@ -806,7 +842,8 @@ export function inspect(v) {
   if (v === null) return "//js(null)";
   if (v === undefined) return "Nil";
   if (t === "string") return inspectString(v);
-  if (t === "bigint" || t === "number") return v.toString();
+  if (t === "bigint" || Number.isInteger(v)) return v.toString();
+  if (t === "number") return float_to_string(v);
   if (Array.isArray(v)) return `#(${v.map(inspect).join(", ")})`;
   if (v instanceof List) return inspectList(v);
   if (v instanceof UtfCodepoint) return inspectUtfCodepoint(v);
@@ -935,7 +972,7 @@ export function bit_array_inspect(bits, acc) {
 export function bit_array_compare(first, second) {
   for (let i = 0; i < first.length; i++) {
     if (i >= second.length) {
-      return new Gt();  // first has more items
+      return new Gt(); // first has more items
     }
     const f = first.buffer[i];
     const s = second.buffer[i];
@@ -943,7 +980,7 @@ export function bit_array_compare(first, second) {
       return new Gt();
     }
     if (f < s) {
-      return new Lt()
+      return new Lt();
     }
   }
   // This means that either first did not have any items
@@ -951,5 +988,5 @@ export function bit_array_compare(first, second) {
   if (first.length === second.length) {
     return new Eq();
   }
-  return new Lt();  // second has more items
+  return new Lt(); // second has more items
 }

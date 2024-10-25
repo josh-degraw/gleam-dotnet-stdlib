@@ -3,8 +3,12 @@
 ## v0.41.0 - Unreleased
 
 - The `bit_array` module gains the `compare` function.
-- The `float` modeule gains the `to_precision` function.
-- The `try_fold` function in the `iterator` module is now tail recursive.
+- The `float` module gains the `to_precision` function.
+- The `iterator.try_fold` function is now tail recursive.
+- The performance of many functions in the `string` module has been improved.
+- The `list.concat` function has been deprecated in favour of `list.flatten`.
+- The handling of float exponentials and signs in the `float.to_string` and
+  `string.inspect` functions have been improved on JavaScript.
 
 ## v0.40.0 - 2024-08-19
 

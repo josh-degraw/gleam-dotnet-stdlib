@@ -96,7 +96,7 @@ pub fn concat(builders: List(StringBuilder)) -> StringBuilder {
 @external(erlang, "gleam_stdlib", "identity")
 @external(javascript, "../gleam_stdlib.mjs", "concat")
 @external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.concat")
-fn do_concat(a: List(StringBuilder)) -> StringBuilder
+fn do_concat(builders: List(StringBuilder)) -> StringBuilder
 
 /// Converts a string into a builder.
 ///
@@ -109,7 +109,7 @@ pub fn from_string(string: String) -> StringBuilder {
 @external(erlang, "gleam_stdlib", "identity")
 @external(javascript, "../gleam_stdlib.mjs", "identity")
 @external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.from_string")
-fn do_from_string(a: String) -> StringBuilder
+fn do_from_string(string: String) -> StringBuilder
 
 /// Turns an `StringBuilder` into a `String`
 ///
@@ -123,7 +123,7 @@ pub fn to_string(builder: StringBuilder) -> String {
 @external(erlang, "unicode", "characters_to_binary")
 @external(javascript, "../gleam_stdlib.mjs", "identity")
 @external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.to_string")
-fn do_to_string(a: StringBuilder) -> String
+fn do_to_string(builder: StringBuilder) -> String
 
 /// Returns the size of the `StringBuilder` in bytes.
 ///
@@ -134,7 +134,7 @@ pub fn byte_size(builder: StringBuilder) -> Int {
 @external(erlang, "erlang", "iolist_size")
 @external(javascript, "../gleam_stdlib.mjs", "length")
 @external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.byte_size")
-fn do_byte_size(a: StringBuilder) -> Int
+fn do_byte_size(builder: StringBuilder) -> Int
 
 /// Joins the given builders into a new builder separated with the given string
 ///
@@ -154,7 +154,7 @@ pub fn lowercase(builder: StringBuilder) -> StringBuilder {
 @external(erlang, "string", "lowercase")
 @external(javascript, "../gleam_stdlib.mjs", "lowercase")
 @external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.lowercase")
-fn do_lowercase(a: StringBuilder) -> StringBuilder
+fn do_lowercase(builder: StringBuilder) -> StringBuilder
 
 /// Converts a builder to a new builder where the contents have been
 /// uppercased.
@@ -166,7 +166,7 @@ pub fn uppercase(builder: StringBuilder) -> StringBuilder {
 @external(erlang, "string", "uppercase")
 @external(javascript, "../gleam_stdlib.mjs", "uppercase")
 @external(fsharp, "../gleam_stdlib.fs", "Gleam.StringBuilder.uppercase")
-fn do_uppercase(a: StringBuilder) -> StringBuilder
+fn do_uppercase(builder: StringBuilder) -> StringBuilder
 
 /// Converts a builder to a new builder with the contents reversed.
 ///
@@ -185,7 +185,7 @@ fn do_reverse(builder: StringBuilder) -> StringBuilder {
 }
 
 @external(javascript, "../gleam_stdlib.mjs", "graphemes")
-fn do_to_graphemes(string string: String) -> List(String)
+fn do_to_graphemes(string: String) -> List(String)
 
 /// Splits a builder on a given pattern into a list of builders.
 ///

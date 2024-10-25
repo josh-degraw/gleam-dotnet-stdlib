@@ -125,11 +125,11 @@ pub fn count(list: List(a), where predicate: fn(a) -> Bool) -> Int {
 ///
 @external(erlang, "lists", "reverse")
 @external(fsharp, "../gleam_stdlib.fs", "Gleam.List.reverse")
-pub fn reverse(xs: List(a)) -> List(a) {
-  do_reverse(xs, [])
+pub fn reverse(list: List(a)) -> List(a) {
+  do_reverse(list, [])
 }
 
-fn do_reverse(remaining, accumulator) {
+fn do_reverse(remaining: List(a), accumulator: List(a)) -> List(a) {
   case remaining {
     [] -> accumulator
     [item, ..rest] -> do_reverse(rest, [item, ..accumulator])
@@ -253,13 +253,11 @@ pub fn first(list: List(a)) -> Result(a, Nil) {
 pub fn rest(list: List(a)) -> Result(List(a), Nil) {
   case list {
     [] -> Error(Nil)
-    [_, ..xs] -> Ok(xs)
+    [_, ..rest] -> Ok(rest)
   }
 }
 
-fn update_group(
-  f: fn(element) -> key,
-) -> fn(Dict(key, List(element)), element) -> Dict(key, List(element)) {
+fn update_group(f: fn(a) -> k) -> fn(Dict(k, List(a)), a) -> Dict(k, List(a)) {
   fn(groups, elem) {
     case dict.get(groups, f(elem)) {
       Ok(existing) -> dict.insert(groups, f(elem), [elem, ..existing])
@@ -307,12 +305,12 @@ pub fn group(list: List(v), by key: fn(v) -> k) -> Dict(k, List(v)) {
 fn do_filter(list: List(a), fun: fn(a) -> Bool, acc: List(a)) -> List(a) {
   case list {
     [] -> reverse(acc)
-    [x, ..xs] -> {
-      let new_acc = case fun(x) {
-        True -> [x, ..acc]
+    [first, ..rest] -> {
+      let new_acc = case fun(first) {
+        True -> [first, ..acc]
         False -> acc
       }
-      do_filter(xs, fun, new_acc)
+      do_filter(rest, fun, new_acc)
     }
   }
 }
@@ -343,12 +341,12 @@ fn do_filter_map(
 ) -> List(b) {
   case list {
     [] -> reverse(acc)
-    [x, ..xs] -> {
-      let new_acc = case fun(x) {
-        Ok(x) -> [x, ..acc]
+    [first, ..rest] -> {
+      let new_acc = case fun(first) {
+        Ok(first) -> [first, ..acc]
         Error(_) -> acc
       }
-      do_filter_map(xs, fun, new_acc)
+      do_filter_map(rest, fun, new_acc)
     }
   }
 }
@@ -375,7 +373,7 @@ pub fn filter_map(list: List(a), with fun: fn(a) -> Result(b, e)) -> List(b) {
 fn do_map(list: List(a), fun: fn(a) -> b, acc: List(b)) -> List(b) {
   case list {
     [] -> reverse(acc)
-    [x, ..xs] -> do_map(xs, fun, [fun(x), ..acc])
+    [first, ..rest] -> do_map(rest, fun, [fun(first), ..acc])
   }
 }
 
@@ -440,10 +438,10 @@ fn do_map2(
 ///
 pub fn map_fold(
   over list: List(a),
-  from acc: acc,
+  from initial: acc,
   with fun: fn(acc, a) -> #(acc, b),
 ) -> #(acc, List(b)) {
-  fold(over: list, from: #(acc, []), with: fn(acc, item) {
+  fold(over: list, from: #(initial, []), with: fn(acc, item) {
     let #(current_acc, items) = acc
     let #(next_acc, next_item) = fun(current_acc, item)
     #(next_acc, [next_item, ..items])
@@ -459,9 +457,9 @@ fn do_index_map(
 ) -> List(b) {
   case list {
     [] -> reverse(acc)
-    [x, ..xs] -> {
-      let acc = [fun(x, index), ..acc]
-      do_index_map(xs, fun, index + 1, acc)
+    [first, ..rest] -> {
+      let acc = [fun(first, index), ..acc]
+      do_index_map(rest, fun, index + 1, acc)
     }
   }
 }
@@ -490,9 +488,9 @@ fn do_try_map(
 ) -> Result(List(b), e) {
   case list {
     [] -> Ok(reverse(acc))
-    [x, ..xs] ->
-      case fun(x) {
-        Ok(y) -> do_try_map(xs, fun, [y, ..acc])
+    [first, ..rest] ->
+      case fun(first) {
+        Ok(first) -> do_try_map(rest, fun, [first, ..acc])
         Error(error) -> Error(error)
       }
   }
@@ -563,7 +561,7 @@ pub fn drop(from list: List(a), up_to n: Int) -> List(a) {
     False ->
       case list {
         [] -> []
-        [_, ..xs] -> drop(xs, n - 1)
+        [_, ..rest] -> drop(rest, n - 1)
       }
   }
 }
@@ -574,7 +572,7 @@ fn do_take(list: List(a), n: Int, acc: List(a)) -> List(a) {
     False ->
       case list {
         [] -> reverse(acc)
-        [x, ..xs] -> do_take(xs, n - 1, [x, ..acc])
+        [first, ..rest] -> do_take(rest, n - 1, [first, ..acc])
       }
   }
 }
@@ -705,6 +703,7 @@ fn do_concat(lists: List(List(a)), acc: List(a)) -> List(a) {
 /// // -> [1, 2, 3]
 /// ```
 ///
+@deprecated("Use `list.flatten` instead.")
 @external(fsharp, "../gleam_stdlib.fs", "Gleam.List.concat")
 pub fn concat(lists: List(List(a))) -> List(a) {
   do_concat(lists, [])
@@ -738,7 +737,7 @@ pub fn flatten(lists: List(List(a))) -> List(a) {
 ///
 pub fn flat_map(over list: List(a), with fun: fn(a) -> List(b)) -> List(b) {
   map(list, fun)
-  |> concat
+  |> flatten
 }
 
 /// Reduces a list of elements into a single value by calling a given function
@@ -805,11 +804,11 @@ fn do_index_fold(
 /// ```
 ///
 pub fn index_fold(
-  over over: List(a),
+  over list: List(a),
   from initial: acc,
   with fun: fn(acc, a, Int) -> acc,
 ) -> acc {
-  do_index_fold(over, initial, fun, 0)
+  do_index_fold(list, initial, fun, 0)
 }
 
 /// A variant of fold that might fail.
@@ -832,14 +831,14 @@ pub fn index_fold(
 /// ```
 ///
 pub fn try_fold(
-  over collection: List(a),
-  from accumulator: acc,
+  over list: List(a),
+  from initial: acc,
   with fun: fn(acc, a) -> Result(acc, e),
 ) -> Result(acc, e) {
-  case collection {
-    [] -> Ok(accumulator)
+  case list {
+    [] -> Ok(initial)
     [first, ..rest] ->
-      case fun(accumulator, first) {
+      case fun(initial, first) {
         Ok(result) -> try_fold(rest, result, fun)
         Error(_) as error -> error
       }
@@ -871,14 +870,14 @@ pub type ContinueOrStop(a) {
 /// ```
 ///
 pub fn fold_until(
-  over collection: List(a),
-  from accumulator: acc,
+  over list: List(a),
+  from initial: acc,
   with fun: fn(acc, a) -> ContinueOrStop(acc),
 ) -> acc {
-  case collection {
-    [] -> accumulator
+  case list {
+    [] -> initial
     [first, ..rest] ->
-      case fun(accumulator, first) {
+      case fun(initial, first) {
         Continue(next_accumulator) -> fold_until(rest, next_accumulator, fun)
         Stop(b) -> b
       }
@@ -908,10 +907,10 @@ pub fn fold_until(
 /// ```
 ///
 pub fn find(
-  in haystack: List(a),
+  in list: List(a),
   one_that is_desired: fn(a) -> Bool,
 ) -> Result(a, Nil) {
-  case haystack {
+  case list {
     [] -> Error(Nil)
     [x, ..rest] ->
       case is_desired(x) {
@@ -944,10 +943,10 @@ pub fn find(
 /// ```
 ///
 pub fn find_map(
-  in haystack: List(a),
+  in list: List(a),
   with fun: fn(a) -> Result(b, c),
 ) -> Result(b, Nil) {
-  case haystack {
+  case list {
     [] -> Error(Nil)
     [x, ..rest] ->
       case fun(x) {
@@ -1026,9 +1025,10 @@ pub fn any(in list: List(a), satisfying predicate: fn(a) -> Bool) -> Bool {
   }
 }
 
-fn do_zip(xs: List(a), ys: List(b), acc: List(#(a, b))) -> List(#(a, b)) {
-  case xs, ys {
-    [x, ..xs], [y, ..ys] -> do_zip(xs, ys, [#(x, y), ..acc])
+fn do_zip(one: List(a), other: List(b), acc: List(#(a, b))) -> List(#(a, b)) {
+  case one, other {
+    [first_one, ..rest_one], [first_other, ..rest_other] ->
+      do_zip(rest_one, rest_other, [#(first_one, first_other), ..acc])
     _, _ -> reverse(acc)
   }
 }
@@ -1100,10 +1100,15 @@ pub fn strict_zip(
   }
 }
 
-fn do_unzip(input, xs, ys) {
+fn do_unzip(
+  input: List(#(a, b)),
+  one: List(a),
+  other: List(b),
+) -> #(List(a), List(b)) {
   case input {
-    [] -> #(reverse(xs), reverse(ys))
-    [#(x, y), ..rest] -> do_unzip(rest, [x, ..xs], [y, ..ys])
+    [] -> #(reverse(one), reverse(other))
+    [#(first_one, first_other), ..rest] ->
+      do_unzip(rest, [first_one, ..one], [first_other, ..other])
   }
 }
 
@@ -1243,7 +1248,7 @@ type Sorting {
 /// - `direction` is the growing direction of the slice being grown, it could
 ///   either be ascending or strictly descending
 /// - `prev` is the previous element that needs to be added to the growing slice
-///   it is carried around to check wether we have to keep growing the current
+///   it is carried around to check whether we have to keep growing the current
 ///   slice or not
 /// - `acc` is the accumulator containing the slices sorted in ascending order
 ///
@@ -1274,7 +1279,7 @@ fn sequences(
         // In case the new element respects the ordering of the growing
         // sequence, then we just keep growing it.
         // Notice how a growing sequence is weakly growing (that is it can have
-        // consecutive equal items) while a descreasing sequence is strictly
+        // consecutive equal items) while a decreasing sequence is strictly
         // decreasing (no consecutive equal items), this is needed to make the
         // algorithm stable!
         order.Gt, Descending | order.Lt, Ascending | order.Eq, Ascending ->
@@ -1470,10 +1475,10 @@ fn tail_recursive_range(start: Int, stop: Int, acc: List(Int)) -> List(Int) {
   }
 }
 
-fn do_repeat(a: a, times: Int, acc: List(a)) -> List(a) {
+fn do_repeat(item: a, times: Int, acc: List(a)) -> List(a) {
   case times <= 0 {
     True -> acc
-    False -> do_repeat(a, times - 1, [a, ..acc])
+    False -> do_repeat(item, times - 1, [item, ..acc])
   }
 }
 
@@ -1501,7 +1506,7 @@ fn do_split(list: List(a), n: Int, taken: List(a)) -> #(List(a), List(a)) {
     False ->
       case list {
         [] -> #(reverse(taken), [])
-        [x, ..xs] -> do_split(xs, n - 1, [x, ..taken])
+        [first, ..rest] -> do_split(rest, n - 1, [first, ..taken])
       }
   }
 }
@@ -1539,10 +1544,10 @@ fn do_split_while(
 ) -> #(List(a), List(a)) {
   case list {
     [] -> #(reverse(acc), [])
-    [x, ..xs] ->
-      case f(x) {
+    [first, ..rest] ->
+      case f(first) {
         False -> #(reverse(acc), list)
-        _ -> do_split_while(xs, f, [x, ..acc])
+        _ -> do_split_while(rest, f, [first, ..acc])
       }
   }
 }
@@ -1674,14 +1679,18 @@ fn do_pop(haystack, predicate, checked) {
 /// ```
 ///
 pub fn pop(
-  in haystack: List(a),
+  in list: List(a),
   one_that is_desired: fn(a) -> Bool,
 ) -> Result(#(a, List(a)), Nil) {
-  do_pop(haystack, is_desired, [])
+  do_pop(list, is_desired, [])
 }
 
-fn do_pop_map(haystack, mapper, checked) {
-  case haystack {
+fn do_pop_map(
+  list: List(a),
+  mapper: fn(a) -> Result(b, e),
+  checked: List(a),
+) -> Result(#(b, List(a)), Nil) {
+  case list {
     [] -> Error(Nil)
     [x, ..rest] ->
       case mapper(x) {
@@ -1743,11 +1752,8 @@ pub fn pop_map(
 /// // -> Error(Nil)
 /// ```
 ///
-pub fn key_pop(
-  haystack: List(#(k, v)),
-  key: k,
-) -> Result(#(v, List(#(k, v))), Nil) {
-  pop_map(haystack, fn(entry) {
+pub fn key_pop(list: List(#(k, v)), key: k) -> Result(#(v, List(#(k, v))), Nil) {
+  pop_map(list, fn(entry) {
     let #(k, v) = entry
     case k {
       k if k == key -> Ok(v)
@@ -1773,7 +1779,7 @@ pub fn key_pop(
 /// // -> [#(5, 0), #(4, 1), #(1, 100)]
 /// ```
 ///
-pub fn key_set(list: List(#(a, b)), key: a, value: b) -> List(#(a, b)) {
+pub fn key_set(list: List(#(k, v)), key: k, value: v) -> List(#(k, v)) {
   case list {
     [] -> [#(key, value)]
     [#(k, _), ..rest] if k == key -> [#(key, value), ..rest]
@@ -1799,9 +1805,9 @@ pub fn key_set(list: List(#(a, b)), key: a, value: b) -> List(#(a, b)) {
 pub fn each(list: List(a), f: fn(a) -> b) -> Nil {
   case list {
     [] -> Nil
-    [x, ..xs] -> {
-      f(x)
-      each(xs, f)
+    [first, ..rest] -> {
+      f(first)
+      each(rest, f)
     }
   }
 }
@@ -1828,9 +1834,9 @@ pub fn try_each(
 ) -> Result(Nil, e) {
   case list {
     [] -> Ok(Nil)
-    [x, ..xs] ->
-      case fun(x) {
-        Ok(_) -> try_each(over: xs, with: fun)
+    [first, ..rest] ->
+      case fun(first) {
+        Ok(_) -> try_each(over: rest, with: fun)
         Error(e) -> Error(e)
       }
   }
@@ -1839,10 +1845,10 @@ pub fn try_each(
 fn do_partition(list, categorise, trues, falses) {
   case list {
     [] -> #(reverse(trues), reverse(falses))
-    [x, ..xs] ->
-      case categorise(x) {
-        True -> do_partition(xs, categorise, [x, ..trues], falses)
-        False -> do_partition(xs, categorise, trues, [x, ..falses])
+    [first, ..rest] ->
+      case categorise(first) {
+        True -> do_partition(rest, categorise, [first, ..trues], falses)
+        False -> do_partition(rest, categorise, trues, [first, ..falses])
       }
   }
 }
@@ -1875,14 +1881,12 @@ pub fn partition(
 /// // -> [[1, 2], [2, 1]]
 /// ```
 ///
-pub fn permutations(l: List(a)) -> List(List(a)) {
-  case l {
+pub fn permutations(list: List(a)) -> List(List(a)) {
+  case list {
     [] -> [[]]
     _ ->
-      l
-      |> index_map(fn(i, i_idx) {
-        l
-        |> index_fold([], fn(acc, j, j_idx) {
+      index_map(list, fn(i, i_idx) {
+        index_fold(list, [], fn(acc, j, j_idx) {
           case i_idx == j_idx {
             True -> acc
             False -> [j, ..acc]
@@ -1892,15 +1896,15 @@ pub fn permutations(l: List(a)) -> List(List(a)) {
         |> permutations
         |> map(fn(permutation) { [i, ..permutation] })
       })
-      |> concat
+      |> flatten
   }
 }
 
-fn do_window(acc: List(List(a)), l: List(a), n: Int) -> List(List(a)) {
-  let window = take(l, n)
+fn do_window(acc: List(List(a)), list: List(a), n: Int) -> List(List(a)) {
+  let window = take(list, n)
 
   case length(window) == n {
-    True -> do_window([window, ..acc], drop(l, 1), n)
+    True -> do_window([window, ..acc], drop(list, 1), n)
     False -> acc
   }
 }
@@ -1919,10 +1923,10 @@ fn do_window(acc: List(List(a)), l: List(a), n: Int) -> List(List(a)) {
 /// // -> []
 /// ```
 ///
-pub fn window(l: List(a), by n: Int) -> List(List(a)) {
+pub fn window(list: List(a), by n: Int) -> List(List(a)) {
   case n <= 0 {
     True -> []
-    False -> do_window([], l, n) |> reverse
+    False -> do_window([], list, n) |> reverse
   }
 }
 
@@ -1940,8 +1944,8 @@ pub fn window(l: List(a), by n: Int) -> List(List(a)) {
 /// // -> []
 /// ```
 ///
-pub fn window_by_2(l: List(a)) -> List(#(a, a)) {
-  zip(l, drop(l, 1))
+pub fn window_by_2(list: List(a)) -> List(#(a, a)) {
+  zip(list, drop(list, 1))
 }
 
 /// Drops the first elements in a given list for which the predicate function returns `True`.
@@ -1959,10 +1963,10 @@ pub fn drop_while(
 ) -> List(a) {
   case list {
     [] -> []
-    [x, ..xs] ->
-      case predicate(x) {
-        True -> drop_while(xs, predicate)
-        False -> [x, ..xs]
+    [first, ..rest] ->
+      case predicate(first) {
+        True -> drop_while(rest, predicate)
+        False -> [first, ..rest]
       }
   }
 }
@@ -2000,8 +2004,8 @@ pub fn take_while(
 
 fn do_chunk(
   list: List(a),
-  f: fn(a) -> key,
-  previous_key: key,
+  f: fn(a) -> k,
+  previous_key: k,
   current_chunk: List(a),
   acc: List(List(a)),
 ) -> List(List(a)) {
@@ -2030,7 +2034,7 @@ fn do_chunk(
 /// // -> [[1], [2, 2], [3], [4, 4, 6], [7, 7]]
 /// ```
 ///
-pub fn chunk(in list: List(a), by f: fn(a) -> key) -> List(List(a)) {
+pub fn chunk(in list: List(a), by f: fn(a) -> k) -> List(List(a)) {
   case list {
     [] -> []
     [first, ..rest] -> do_chunk(rest, f, f(first), [first], [])
@@ -2118,9 +2122,9 @@ fn do_scan(
 ) -> List(acc) {
   case list {
     [] -> reverse(accumulated)
-    [x, ..xs] -> {
-      let next = fun(accumulator, x)
-      do_scan(xs, next, [next, ..accumulated], fun)
+    [first, ..rest] -> {
+      let next = fun(accumulator, first)
+      do_scan(rest, next, [next, ..accumulated], fun)
     }
   }
 }
@@ -2187,11 +2191,11 @@ pub fn combinations(items: List(a), by n: Int) -> List(List(a)) {
     _ ->
       case items {
         [] -> []
-        [x, ..xs] -> {
+        [first, ..rest] -> {
           let first_combinations =
-            map(combinations(xs, n - 1), with: fn(com) { [x, ..com] })
+            map(combinations(rest, n - 1), with: fn(com) { [first, ..com] })
             |> reverse
-          fold(first_combinations, combinations(xs, n), fn(acc, c) {
+          fold(first_combinations, combinations(rest, n), fn(acc, c) {
             [c, ..acc]
           })
         }
@@ -2202,9 +2206,9 @@ pub fn combinations(items: List(a), by n: Int) -> List(List(a)) {
 fn do_combination_pairs(items: List(a)) -> List(List(#(a, a))) {
   case items {
     [] -> []
-    [x, ..xs] -> {
-      let first_combinations = map(xs, with: fn(other) { #(x, other) })
-      [first_combinations, ..do_combination_pairs(xs)]
+    [first, ..rest] -> {
+      let first_combinations = map(rest, with: fn(other) { #(first, other) })
+      [first_combinations, ..do_combination_pairs(rest)]
     }
   }
 }
@@ -2220,7 +2224,7 @@ fn do_combination_pairs(items: List(a)) -> List(List(#(a, a))) {
 ///
 pub fn combination_pairs(items: List(a)) -> List(#(a, a)) {
   do_combination_pairs(items)
-  |> concat
+  |> flatten
 }
 
 /// Make a list alternating the elements from the given lists
@@ -2234,7 +2238,7 @@ pub fn combination_pairs(items: List(a)) -> List(#(a, a)) {
 ///
 pub fn interleave(list: List(List(a))) -> List(a) {
   transpose(list)
-  |> concat
+  |> flatten
 }
 
 /// Transpose rows and columns of the list of lists.
@@ -2261,12 +2265,12 @@ pub fn transpose(list_of_list: List(List(a))) -> List(List(a)) {
 
   case list_of_list {
     [] -> []
-    [[], ..xss] -> transpose(xss)
+    [[], ..rest] -> transpose(rest)
     rows -> {
       let firsts =
         rows
         |> map(take_first)
-        |> concat
+        |> flatten
       let rest = transpose(map(rows, drop(_, 1)))
       [firsts, ..rest]
     }
