@@ -108,7 +108,22 @@ module Float =
 
     let truncate (a: float) = int64 (a)
 
-    let to_string (a: float) = a.ToString("F1")
+    let to_string (a: float) =
+
+        let str = a.ToString("r").ToLowerInvariant()
+
+        let str =
+            if not (str.Contains(".")) then
+                if str.Contains("e") then
+                    let parts = str.Split 'e'
+                    let str = parts.[0] + ".0e" + parts.[1]
+                    str
+                else
+                    str + ".0"
+            else
+                str
+
+        str.Replace("+", "") // Remove the + sign if it exists for exponential notation
 
 module Int =
 
@@ -259,8 +274,10 @@ module StringBuilder =
         let rec inspect_term (term: obj) =
             if isNull term || term = () then
                 builder.Append("Nil") |> ignore
-            elif term :? int64 || term :? float then
+            elif term :? int64 then
                 builder.Append(term.ToString()) |> ignore
+            elif term :? float then
+                builder.Append(Float.to_string (term :?> float)) |> ignore
             elif term :? bool then
                 let b = term :?> bool
 
