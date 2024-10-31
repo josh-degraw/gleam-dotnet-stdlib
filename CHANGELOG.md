@@ -1,6 +1,8 @@
 # Changelog
 
-## v0.41.0 - Unreleased
+## v0.41.0 - 2024-10-31
+
+Happy Samhain! 🎃
 
 - The `bit_array` module gains the `compare` function.
 - The `float` module gains the `to_precision` function.
@@ -9,6 +11,7 @@
 - The `list.concat` function has been deprecated in favour of `list.flatten`.
 - The handling of float exponentials and signs in the `float.to_string` and
   `string.inspect` functions have been improved on JavaScript.
+- The `set` module gains the `each` function.
 
 ## v0.40.0 - 2024-08-19
 
